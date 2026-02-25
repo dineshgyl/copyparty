@@ -1,4 +1,17 @@
 ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  
+# 2026-0225-0834  `v1.20.9`  SECURITY: XSS fix
+
+## ⚠️ ATTN: this release fixes an XSS vulnerability
+
+[GHSA-62cr-6wp5-q43h](https://github.com/9001/copyparty/security/advisories/GHSA-62cr-6wp5-q43h) could let an attacker execute arbitrary JS by tricking you into clicking a malicious link 31b2801f
+
+## 🔧 other changes
+
+* webdav: [dav-port](https://copyparty.eu/cli/#g-dav-port) can be used as an alternative to [daw](https://copyparty.eu/cli/#g-daw) d21242fc
+
+
+
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  
 # 2026-0222-1507  `v1.20.8`  no265
 
 ## 🧪 new features
