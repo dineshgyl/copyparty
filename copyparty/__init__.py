@@ -65,6 +65,9 @@ web/browser.js
 web/browser2.html
 web/cf.html
 web/copyparty.gif
+web/gallery.css
+web/gallery.html
+web/gallery.js
 web/deps/busy.mp3
 web/deps/easymde.css
 web/deps/easymde.js

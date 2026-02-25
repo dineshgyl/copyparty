@@ -1496,6 +1496,9 @@ class HttpCli(object):
             if "shares" in self.uparam:
                 return self.tx_shares()
 
+            if "gallery" in self.uparam:
+                return self.tx_gallery()
+
             if "dls" in self.uparam:
                 return self.tx_dls()
 
@@ -6305,6 +6308,147 @@ class HttpCli(object):
         )
         self.reply(html.encode("utf-8"), status=200)
         return True
+    def tx_gallery(self) -> bool:
+        """Render gallery view or return JSON data of media folders"""
+        if self.uparam.get("gallery") == "json":
+            return self.tx_gallery_json()
+        
+        # Render the gallery HTML page
+        html = self.j2s(
+            "gallery",
+            title="Media Gallery",
+            this=self,
+        )
+        self.reply(html.encode("utf-8"), status=200)
+        return True
+
+    def tx_gallery_json(self) -> bool:
+        """Return JSON data of all folders containing media files"""
+        import json
+        import os
+        
+        media_exts = {
+            'image': set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif', 'avif', 'jxl']),
+            'video': set(['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', 'mpg', 'mpeg']),
+            'audio': set(['mp3', 'flac', 'wav', 'ogg', 'm4a', 'aac', 'opus', 'wma'])
+        }
+        
+        gallery_items = []
+        
+        # Iterate through all volumes the user has access to
+        for vpath, vnode in self.asrv.vfs.all_vols.items():
+            if not vnode.realpath:
+                continue
+            
+            # Check if user has read access - use same logic as browser
+            if vpath not in self.rvol:
+                continue
+            
+            # Scan the volume for folders with media
+            try:
+                self._scan_for_media_folders(
+                    vnode.realpath, vpath, vnode, media_exts, gallery_items
+                )
+            except Exception as e:
+                self.log("Error scanning %s: %s" % (vpath, str(e)), 3)
+        
+        # Sort by name
+        gallery_items.sort(key=lambda x: x['name'].lower())
+        
+        json_data = json.dumps(gallery_items, ensure_ascii=False)
+        self.reply(json_data.encode("utf-8"), mime="application/json")
+        return True
+    
+    def _scan_for_media_folders(self, realpath, vpath, vnode, media_exts, gallery_items, max_depth=5, current_depth=0):
+        """Recursively scan for folders containing media files"""
+        if current_depth >= max_depth:
+            return
+        
+        try:
+            entries = bos.listdir(realpath)
+        except:
+            return
+        
+        folder_media = {
+            'image': 0,
+            'video': 0,
+            'audio': 0,
+            'files': [],
+            'years': set()
+        }
+        
+        subdirs = []
+        
+        for entry in entries:
+            if entry.startswith('.'):
+                continue
+            
+            entry_path = os.path.join(realpath, entry)
+            
+            try:
+                if bos.path.isdir(entry_path):
+                    subdirs.append((entry_path, entry))
+                elif bos.path.isfile(entry_path):
+                    ext = entry.rsplit('.', 1)[-1].lower() if '.' in entry else ''
+                    
+                    for media_type, exts in media_exts.items():
+                        if ext in exts:
+                            folder_media[media_type] += 1
+                            folder_media['files'].append(entry)
+                            # Get file modification year
+                            try:
+                                file_mtime = os.path.getmtime(entry_path)
+                                from datetime import datetime
+                                year = datetime.fromtimestamp(file_mtime).year
+                                folder_media['years'].add(year)
+                            except:
+                                pass
+                            break
+            except:
+                continue
+        
+        # If this folder has media, add it to results
+        total_media = folder_media['image'] + folder_media['video'] + folder_media['audio']
+        if total_media > 0:
+            # Try to find a thumbnail
+            thumb_url = None
+            if folder_media['files']:
+                # Use first image as thumbnail
+                for fname in folder_media['files']:
+                    ext = fname.rsplit('.', 1)[-1].lower() if '.' in fname else ''
+                    if ext in media_exts['image']:
+                        # Build thumbnail URL
+                        file_vpath = vpath + ('/' if vpath else '') + fname
+                        thumb_url = self.args.SR + '/' + file_vpath + '?th=j'
+                        break
+            
+            folder_name = os.path.basename(realpath) or vpath or 'root'
+            
+            try:
+                mtime = os.path.getmtime(realpath)
+            except:
+                mtime = 0
+            
+            gallery_items.append({
+                'name': folder_name,
+                'vpath': vpath,
+                'image_count': folder_media['image'],
+                'video_count': folder_media['video'],
+                'audio_count': folder_media['audio'],
+                'total_files': total_media,
+                'thumb_url': thumb_url,
+                'mtime': mtime,
+                'years': sorted(list(folder_media['years']), reverse=True)
+            })
+        
+        # Recursively scan subdirectories
+        for subdir_path, subdir_name in subdirs:
+            subdir_vpath = vpath + ('/' if vpath else '') + subdir_name
+            self._scan_for_media_folders(
+                subdir_path, subdir_vpath, vnode, media_exts, 
+                gallery_items, max_depth, current_depth + 1
+            )
+
 
     def handle_eshare(self) -> bool:
         idx = self.conn.get_u2idx()

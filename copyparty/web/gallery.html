@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" id="ht_gal">
+
+<head>
+	<meta charset="utf-8">
+	<title>{{ title }}</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=0.8, minimum-scale=0.6">
+	<meta name="theme-color" content="#{{ tcolor }}">
+	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/ui.css?_={{ ts }}">
+	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/gallery.css?_={{ ts }}">
+{{ html_head }}
+</head>
+
+<body>
+	<div id="wrap">
+		<h1 id="title">
+			📸 Media Gallery
+		</h1>
+
+		<div id="controls">
+			<a href="{{ r }}/?h" id="controlPanelBtn">⚙️ Control Panel</a>
+			<button id="homeButton">🏠 Home</button>
+			<button id="back-btn" style="display:none;">← Back to Folders</button>
+			<input type="text" id="search" placeholder="Search..." />
+			<select id="sort">
+				<option value="name-asc">Name (A-Z)</option>
+				<option value="name-desc">Name (Z-A)</option>
+				<option value="date-desc">Date (Newest)</option>
+				<option value="date-asc">Date (Oldest)</option>
+				<option value="size-desc">Size (Largest)</option>
+				<option value="size-asc">Size (Smallest)</option>
+			</select>
+			<select id="yearFilter">
+				<option value="all">All Years</option>
+			</select>
+			<button id="timelineButton">📅 Timeline</button>
+			<button id="refresh">🔄 Refresh</button>
+		</div>
+	
+		<div id="timelineView" style="display:none;"></div>
+
+		<div id="gallery-grid"></div>
+
+		<div id="loading" style="display:none;">
+			<p>Loading media folders...</p>
+		</div>
+
+		<div id="no-results" style="display:none;">
+			<p>No media folders found</p>
+		</div>
+
+		<div id="bottom-nav">
+			<button id="backButtonBottom" style="display:none;">← Back to Folders</button>
+			<button id="homeButtonBottom">🏠 Home</button>
+		</div>
+	</div>
+
+	<button id="scrollToTop" title="Scroll to top">↑</button>
+
+	<div id="srv_info"><span>{{ srv_info }}</span></div>
+
+	<a href="#" id="repl">π</a>
+
+	<script>
+		var SR = "{{ r }}",
+			lang = "{{ lang }}",
+			dfavico = "{{ favico }}",
+			TS = "{{ ts }}";
+
+		var STG = window.localStorage;
+		document.documentElement.className = (STG && STG.cpp_thm) || "{{ dtheme }}";
+	</script>
+	<script src="{{ r }}/.cpr/util.js?_={{ ts }}"></script>
+	{%- if lang != "eng" %}
+	<script src="{{ r }}/.cpr/tl/{{ lang }}.js?_={{ ts }}"></script>
+	{%- endif %}
+	<script src="{{ r }}/.cpr/gallery.js?_={{ ts }}"></script>
+	<script>
+		Date.now();function jsldp(a,b){2!=window[a]&&alert("FATAL ERROR: cannot load "+b+".js due to unreliable network or broken reverse-proxy; try CTRL-SHIFT-R")}
+		jsldp("J_UTL","util");
+		jsldp("J_GAL","gallery");
+	</script>
+</body>
+</html>

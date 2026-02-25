@@ -158,6 +158,10 @@
 
 		<h1 id="cc">other stuff:</h1>
 		<div class="agr">
+			{%- if rvol %}
+			<a id="gal" href="{{ r }}/?gallery">📸 media gallery</a><br />
+			{%- endif %}
+
 			{%- if ahttps %}
 			<a id="wb" href="{{ ahttps }}">switch to https</a><br />
 			{%- endif %}

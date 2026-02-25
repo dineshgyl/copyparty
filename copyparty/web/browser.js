@@ -756,6 +756,7 @@ ebi('ops').innerHTML = (
 	'<a href="#" id="opa_msg" data-dest="msg" tt="' + L.ot_msg + '">📟</a>' +
 	'<a href="#" id="opa_auc" data-dest="player" tt="' + L.ot_mp + '">🎺</a>' +
 	'<a href="#" id="opa_cfg" data-dest="cfg" tt="' + L.ot_cfg + '">⚙️</a>' +
+	'<a href="#" id="opa_gallery" data-perm="read" tt="Media Gallery" onclick="window.location.href=\'' + SR + '/?gallery\'; return false;">📸</a>' +
 	(IE ? '<span id="noie">' + L.ot_noie + '</span>' : '') +
 	'<div id="opdesc"></div>'
 );
@@ -1078,6 +1079,12 @@ ebi('rcm').innerHTML = (
 
 
 function opclick(e) {
+	// Allow gallery button to navigate directly
+	if (this.id === 'opa_gallery') {
+		window.location.href = SR + '/?gallery';
+		return false;
+	}
+	
 	var dest = this.getAttribute('data-dest');
 	if (QS('#op_' + dest + '.act'))
 		dest = '';
