@@ -650,8 +650,8 @@ class HttpCli(object):
             if len(zso) > self.args.cookie_cmax:
                 self.loud_reply("cookie header too big", status=400)
                 return False
-            zsll = [x.split("=", 1) for x in zso.split(";") if "=" in x]
-            cookies = {k.strip(): unescape_cookie(zs, k) for k, zs in zsll}
+            zsll = [x.lstrip().split("=", 1) for x in zso.split(";") if "=" in x]
+            cookies = {k.rstrip(): unescape_cookie(zs.strip(), k) for k, zs in zsll}
             cookie_pw = cookies.get("cppws" if self.is_https else "cppwd") or ""
             if "b" in cookies and "b" not in uparam:
                 uparam["b"] = cookies["b"]
