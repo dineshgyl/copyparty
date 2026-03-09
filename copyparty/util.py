@@ -413,6 +413,7 @@ IMPLICATIONS = [
     ["tftpvv", "tftpv"],
     ["nodupem", "nodupe"],
     ["no_dupe_m", "no_dupe"],
+    ["nohtml", "noscript"],
     ["sftpvv", "sftpv"],
     ["smbw", "smb"],
     ["smb1", "smb"],
@@ -474,7 +475,7 @@ MIMES = {
 }
 
 
-def _add_mimes() -> None:
+def _add_mimes() -> set[str]:
     # `mimetypes` is woefully unpopulated on windows
     # but will be used as fallback on linux
 
@@ -501,7 +502,7 @@ image heics=heic-sequence heifs=heif-sequence hdr=vnd.radiance svg=svg+xml
 image arw=x-sony-arw cr2=x-canon-cr2 crw=x-canon-crw dcr=x-kodak-dcr dng=x-adobe-dng erf=x-epson-erf
 image k25=x-kodak-k25 kdc=x-kodak-kdc mrw=x-minolta-mrw nef=x-nikon-nef orf=x-olympus-orf
 image pef=x-pentax-pef raf=x-fuji-raf raw=x-panasonic-raw sr2=x-sony-sr2 srf=x-sony-srf x3f=x-sigma-x3f
-audio caf=x-caf mp3=mpeg m4a=mp4 mid=midi mpc=musepack aif=aiff au=basic qcp=qcelp
+audio caf=x-caf mp3=mpeg m4a=mp4 m4b=mp4 m4r=mp4 mid=midi mpc=musepack aif=aiff au=basic qcp=qcelp
 video mkv=x-matroska mov=quicktime avi=x-msvideo m4v=x-m4v ts=mp2t
 video asf=x-ms-asf flv=x-flv 3gp=3gpp 3g2=3gpp2 rmvb=vnd.rn-realmedia-vbr
 font ttc=collection
@@ -511,8 +512,11 @@ font ttc=collection
             ext, mime = em.split("=")
             MIMES[ext] = "{}/{}".format(k, mime)
 
+    ptn = re.compile("html|script|tension|wasm|xml")
+    return {x for x in MIMES.values() if not ptn.search(x)}
 
-_add_mimes()
+
+SAFE_MIMES = _add_mimes()
 
 
 EXTS: dict[str, str] = {v: k for k, v in MIMES.items()}
@@ -3501,6 +3505,13 @@ def guess_mime(
             ret += "; charset=utf-8"
 
     return ret
+
+
+def safe_mime(mime: str) -> str:
+    if "text/" in mime or "xml" in mime:
+        return "text/plain; charset=utf-8"
+    else:
+        return "application/octet-stream"
 
 
 def getalive(pids: list[int], pgid: int) -> list[int]:

@@ -137,12 +137,13 @@ class HttpSrv(object):
         dls: dict[str, tuple[float, int]] = {}  # state
         self.dli = self.tdli = dli
         self.dls = self.tdls = dls
-        self.iiam = '<img src="%s.cpr/iiam.gif?cache=i" />' % (self.args.SRS,)
+        self.iiam = '<img src="%s.cpr/w/iiam.gif?cache=i" />' % (self.args.SRS,)
 
         self.bound: set[tuple[str, int]] = set()
         self.name = "hsrv" + nsuf
         self.mutex = threading.Lock()
         self.u2mutex = threading.Lock()
+        self.bad_ver = False
         self.stopping = False
 
         self.tp_nthr = 0  # actual
@@ -239,6 +240,9 @@ class HttpSrv(object):
             self.th_cfg = x.get()
         except:
             pass
+
+    def set_bad_ver(self) -> None:
+        self.bad_ver = True
 
     def set_netdevs(self, netdevs: dict[str, Netdev]) -> None:
         ips = set()

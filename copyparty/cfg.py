@@ -363,6 +363,7 @@ flagcats = {
         "md_sba": "value of iframe allow-prop for markdown-sandbox",
         "lg_sba": "value of iframe allow-prop for *logue-sandbox",
         "nohtml": "return html and markdown as text/html",
+        "noscript": "disable most javascript by use of CSP",
         "ui_noacci": "hide account-info in the UI",
         "ui_nocpla": "hide cpanel-link in the UI",
         "ui_nolbar": "hide link-bar in the UI",

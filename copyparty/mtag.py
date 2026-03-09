@@ -68,6 +68,7 @@ CBZ_PICS = set("png jpg jpeg gif bmp tga tif tiff webp avif jxl".split())
 CBZ_01 = re.compile(r"(^|[^0-9v])0+[01]\b")
 
 FMT_AU = set("mp3 ogg flac wav".split())
+M4A = set("aac m4a m4b m4r".split())
 
 
 class MParser(object):
@@ -132,6 +133,7 @@ class MParser(object):
 def au_unpk(
     log: "NamedLogger", fmt_map: dict[str, str], abspath: str, vn: Optional[VFS] = None
 ) -> str:
+    fd = 0
     ret = ""
     maxsz = 1024 * 1024 * 64
     try:
@@ -185,6 +187,7 @@ def au_unpk(
 
         fsz = 0
         with os.fdopen(fd, "wb") as fo:
+            fd = 0
             while True:
                 buf = fi.read(32768)
                 if not buf:
@@ -199,6 +202,8 @@ def au_unpk(
         return ret
 
     except Exception as ex:
+        if fd:
+            os.close(fd)
         if ret:
             t = "failed to decompress file %r: %r"
             log(t % (abspath, ex))
@@ -259,7 +264,7 @@ def parse_ffprobe(
     md: dict[str, list[Any]] = {}  # raw tags
 
     is_audio = fmt.get("format_name") in FMT_AU
-    if fmt.get("filename", "").split(".")[-1].lower() in ["m4a", "aac"]:
+    if fmt.get("filename", "").split(".")[-1].lower() in M4A:
         is_audio = True
 
     # if audio file, ensure audio stream appears first
@@ -666,7 +671,7 @@ class MTag(object):
                     zb = os.getxattr(abspath, xattr)
                     ret[xattr] = zb.decode("utf-8", "replace")
             except:
-                self.log("failed to read xattrs from [%s]\n%s", abspath, min_ex(), 3)
+                self.log("failed to read xattrs from [%s]\n%s" % (abspath, min_ex()), 3)
         elif "db_xattr_yes" in vf:
             for xattr in vf["db_xattr_yes"]:
                 if "=" in xattr:

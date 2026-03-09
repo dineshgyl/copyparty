@@ -61,6 +61,14 @@ most editions support `x86`, `x86_64`, `armhf`, `aarch64`, `ppc64le`, `s390x`
 > NOTE: the following editions are unfinished experiments, and not published anywhere: djd djf djff dju
 
 
+### aftermarket editions
+
+some notable alternative copyparty distributions, made and maintained by other people, unaffiliated unless mentioned otherwise -- please use your own judgement whether to trust these
+
+* https://github.com/0x464e/patentparty has more multimedia codecs than the official images
+  * as of writing: a modification of the official images, automatically maintained by github actions; looks clean and legit
+
+
 ## detecting bpm and musical key
 
 the `dj` edition comes with `keyfinder` and `beatroot` which can be used to detect music bpm and musical keys

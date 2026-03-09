@@ -420,7 +420,7 @@ window.baguetteBox = (function () {
             playpause();
         else if (kl == "u" || kl == "o")
             relseek(kl == "u" ? -10 : 10);
-        else if (v && /^[0-9]$/.test(k))
+        else if (v && /^[0-9]$/.test(k) && isNum(v.duration))
             v.currentTime = v.duration * parseInt(k) * 0.1;
         else if (kl == "m" && v) {
             v.muted = vmute = !vmute;
@@ -1176,8 +1176,11 @@ window.baguetteBox = (function () {
     }
 
     function relseek(sec) {
-        if (vid())
-            vid().currentTime += sec;
+        var v = vid(),
+            t = v && v.currentTime;
+
+        if (isNum(t))
+            v.currentTime = t + sec;
     }
 
     function vidEnd() {

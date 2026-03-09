@@ -871,7 +871,7 @@ class ThumbSrv(object):
         try:
             zs = shlex.join([x.decode("utf-8", "replace") for x in cmd])
         except:
-            zs = "'" + (b"' '".join(cmd2)).decode("utf-8", "replace") + "'"
+            zs = "'" + (b"' '".join(cmd)).decode("utf-8", "replace") + "'"
 
         self.log("%scmd: %s\n%s" % (t, zs, txt), c=c)
         raise sp.CalledProcessError(ret, (cmd[0], b"...", cmd[-1]))

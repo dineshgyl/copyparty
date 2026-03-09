@@ -8,7 +8,7 @@ def say_no():
 
 
 def main(cli, vn, rem):
-    cli.send_headers(None, 404, "text/plain")
+    cli.send_headers("oh_f", None, 404, "text/plain")
 
     for chunk in say_no():
         cli.s.sendall(chunk)

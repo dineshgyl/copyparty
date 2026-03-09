@@ -7,8 +7,8 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=0.8">
 	<meta name="theme-color" content="#{{ tcolor }}">
-	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/splash.css?_={{ ts }}">
-	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/ui.css?_={{ ts }}">
+	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/w/splash.css?_={{ ts }}">
+	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/w/ui.css?_={{ ts }}">
 {{ html_head }}
 </head>
 
@@ -220,11 +220,11 @@ var STG = window.localStorage;
 document.documentElement.className = (STG && STG.cpp_thm) || "{{ this.args.theme }}";
 
 </script>
-<script src="{{ r }}/.cpr/util.js?_={{ ts }}"></script>
+<script src="{{ r }}/.cpr/w/util.js?_={{ ts }}"></script>
 {%- if lang != "eng" %}
-<script src="{{ r }}/.cpr/tl/{{ lang }}.js?_={{ ts }}"></script>
+<script src="{{ r }}/.cpr/w/tl/{{ lang }}.js?_={{ ts }}"></script>
 {%- endif %}
-<script src="{{ r }}/.cpr/splash.js?_={{ ts }}"></script>
+<script src="{{ r }}/.cpr/w/splash.js?_={{ ts }}"></script>
 {%- if js %}
 <script src="{{ js }}_={{ ts }}"></script>
 {%- endif %}

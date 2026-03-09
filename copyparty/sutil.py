@@ -18,7 +18,7 @@ if True:  # pylint: disable=using-constant-test
     from .util import NamedLogger
 
 
-TAR_NO_OPUS = set("aac|m4a|mp3|oga|ogg|opus|wma".split("|"))
+TAR_NO_OPUS = set("aac|m4a|m4b|m4r|mp3|oga|ogg|opus|wma".split("|"))
 
 
 class StreamArc(object):

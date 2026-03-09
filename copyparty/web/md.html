@@ -7,10 +7,10 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=0.7">
 	<meta name="theme-color" content="#{{ tcolor }}">
-	<link rel="stylesheet" href="{{ r }}/.cpr/ui.css?_={{ ts }}">
-	<link rel="stylesheet" href="{{ r }}/.cpr/md.css?_={{ ts }}">
+	<link rel="stylesheet" href="{{ r }}/.cpr/w/ui.css?_={{ ts }}">
+	<link rel="stylesheet" href="{{ r }}/.cpr/w/md.css?_={{ ts }}">
 	{%- if edit %}
-	<link rel="stylesheet" href="{{ r }}/.cpr/md2.css?_={{ ts }}">
+	<link rel="stylesheet" href="{{ r }}/.cpr/w/md2.css?_={{ ts }}">
 	{%- endif %}
 {{ html_head }}
 </head>
@@ -159,11 +159,11 @@ try { l.light = drk? 0:1; } catch (ex) { }
 })();
 
 	</script>
-	<script src="{{ r }}/.cpr/util.js?_={{ ts }}"></script>
-	<script src="{{ r }}/.cpr/deps/marked.js?_={{ ts }}"></script>
-	<script src="{{ r }}/.cpr/md.js?_={{ ts }}"></script>
+	<script src="{{ r }}/.cpr/w/util.js?_={{ ts }}"></script>
+	<script src="{{ r }}/.cpr/w/deps/marked.js?_={{ ts }}"></script>
+	<script src="{{ r }}/.cpr/w/md.js?_={{ ts }}"></script>
 	{%- if edit %}
-	<script src="{{ r }}/.cpr/md2.js?_={{ ts }}"></script>
+	<script src="{{ r }}/.cpr/w/md2.js?_={{ ts }}"></script>
 	{%- endif %}
 	<script>
 		Date.now();function jsldp(a,b){2!=window[a]&&alert("FATAL ERROR: cannot load "+b+".js due to unreliable network or broken reverse-proxy; try CTRL-SHIFT-R")}

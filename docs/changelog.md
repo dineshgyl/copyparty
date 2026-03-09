@@ -1,4 +1,26 @@
 ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  
+# 2026-0225-1533  `v1.20.10`  fix login (ﾉ ﾟヮﾟ)ﾉ ~┻━┻
+
+## recent important news
+
+* [v1.20.9 (2025-02-25)](https://github.com/9001/copyparty/releases/tag/v1.20.9) fixed [CVE-2026-27948](https://github.com/9001/copyparty/security/advisories/GHSA-62cr-6wp5-q43h) (XSS)
+
+## 🩹 bugfixes
+
+* #1311 fix login (broke in v1.20.9) ecdfd2d1
+
+## 🔧 other changes
+
+* warn that config-reload doesn't do global-options a29037a0
+
+## 🌠 fun facts
+
+* rushing out a cve-fix in the wee hours of the morning before the 9-5 is a great idea that never goes wrong
+  * 10/10 will probably do again
+
+
+
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  
 # 2026-0225-0834  `v1.20.9`  SECURITY: XSS fix
 
 ## ⚠️ ATTN: this release fixes an XSS vulnerability

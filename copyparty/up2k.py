@@ -102,7 +102,7 @@ ICV_EXTS = set(zsg.split(","))
 zsg = "3gp,asf,av1,avc,avi,flv,m4v,mjpeg,mjpg,mkv,mov,mp4,mpeg,mpeg2,mpegts,mpg,mpg2,mts,nut,ogm,ogv,rm,vob,webm,wmv"
 VCV_EXTS = set(zsg.split(","))
 
-zsg = "aif,aiff,alac,ape,flac,m4a,mp3,oga,ogg,opus,tak,tta,wav,wma,wv,cbz,epub"
+zsg = "aif,aiff,alac,ape,flac,m4a,m4b,m4r,mp3,oga,ogg,opus,tak,tta,wav,wma,wv,cbz,epub"
 ACV_EXTS = set(zsg.split(","))
 
 zsg = "nohash noidx xdev xvol"
@@ -661,19 +661,20 @@ class Up2k(object):
 
             for _ in range(2):
                 q = "select ip, at from up where ip > '' order by +at limit 1"
-                hits = cur.execute(q).fetchall()
-                if not hits:
-                    break
+                with self.mutex:
+                    hits = cur.execute(q).fetchall()
+                    if not hits:
+                        break
 
-                remains = hits[0][1] - cutoff
-                if remains > 0:
-                    timeout = min(timeout, now + remains)
-                    break
+                    remains = hits[0][1] - cutoff
+                    if remains > 0:
+                        timeout = min(timeout, now + remains)
+                        break
 
-                q = "update up set ip = '' where ip > '' and at <= %d"
-                cur.execute(q % (cutoff,))
-                zi = cur.rowcount
-                cur.connection.commit()
+                    q = "update up set ip = '' where ip > '' and at <= %d"
+                    cur.execute(q % (cutoff,))
+                    zi = cur.rowcount
+                    cur.connection.commit()
 
                 t = "forget-ip(%d) removed %d IPs from db [/%s]"
                 self.log(t % (maxage, zi, vol.vpath))
@@ -1153,7 +1154,7 @@ class Up2k(object):
         ft = "\033[0;32m{}{:.0}"
         ff = "\033[0;35m{}{:.0}"
         fv = "\033[0;36m{}:\033[90m{}"
-        zs = "bcasechk du_iwho emb_all emb_lgs emb_mds ext_th_d html_head html_head_d html_head_s ls_q_m put_name2 mv_re_r mv_re_t rm_re_r rm_re_t rw_edit_set srch_re_dots srch_re_nodot zipmax zipmaxn_v zipmaxs_v"
+        zs = "bcasechk du_iwho emb_all emb_lgs emb_mds ext_th_d html_head html_head_d html_head_s ls_q_m put_name2 mv_re_r mv_re_t rm_re_r rm_re_t oh_f oh_g rw_edit_set srch_re_dots srch_re_nodot zipmax zipmaxn_v zipmaxs_v"
         fx = set(zs.split())
         fd = vf_bmap()
         fd.update(vf_cmap())

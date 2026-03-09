@@ -19,6 +19,8 @@ cmp 2 ../cver/2 || zlib=1
 cmp 3 ../cver/3 || ff=1
 echo zlib=$zlib ff=$ff
 
+[ "$1" ] && exit
+
 [ $zlib ] && { make zlib; cp -pv 1 2 ../cver/; }
 [ $ff ] &&   { make ff;   cp -pv 3 ../cver/; }
 rm -rf cver2

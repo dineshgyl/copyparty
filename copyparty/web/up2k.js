@@ -801,7 +801,7 @@ function up2k_init(subtle) {
 
     setTimeout(function () {
         if (WebAssembly && !hws.length)
-            fetch(SR + '/.cpr/w.hash.js?_=' + TS);
+            fetch(SR + '/.cpr/w/w.hash.js?_=' + TS);
     }, 1000);
 
     function showmodal(msg) {
@@ -831,7 +831,7 @@ function up2k_init(subtle) {
                 m = L.u_https1 + ' <a href="' + (location + '').replace(':', 's:') + '">' + L.u_https2 + '</a> ' + L.u_https3;
 
             showmodal('<h1>loading ' + fn + '</h1>');
-            import_js(SR + '/.cpr/deps/' + fn, unmodal);
+            import_js(SR + '/.cpr/w/deps/' + fn, unmodal);
 
             if (HTTPS) {
                 // chrome<37 firefox<34 edge<12 opera<24 safari<7
@@ -1470,7 +1470,7 @@ function up2k_init(subtle) {
             }
 
             for (var a = 0; a < nw; a++)
-                hws.push(new Worker(SR + '/.cpr/w.hash.js?_=' + TS));
+                hws.push(new Worker(SR + '/.cpr/w/w.hash.js?_=' + TS));
 
             if (!subtle)
                 for (var a = 0; a < hws.length; a++)

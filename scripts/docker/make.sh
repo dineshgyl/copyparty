@@ -194,6 +194,7 @@ filt=
     for i in $dhub_order; do
         printf '\ndockerhub %s\n' $i
         podman manifest push --all copyparty-$i copyparty/$i:$ver
+        podman manifest push --all copyparty-$i copyparty/$i:beta
         podman manifest push --all copyparty-$i copyparty/$i:latest
     done &
     for i in $ghcr_order; do

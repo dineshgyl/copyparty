@@ -717,7 +717,7 @@ for (var a = 0; a < LANGN.length; a++)
 function langtest() {
 	var n = LANGS.length - 1;
 	for (var a = 1; a < LANGS.length; a++)
-		import_js(SR + '/.cpr/tl/' + LANGS[a] + '.js', function () { if (!--n) langtest2(); });
+		import_js(SR + '/.cpr/w/tl/' + LANGS[a] + '.js', function () { if (!--n) langtest2(); });
 }
 function langtest2() {
 for (var a = 0; a < LANGS.length; a++) {
@@ -1446,7 +1446,7 @@ var mpl = (function () {
 			c = false;
 		else if (/\.(wav|flac)$/i.exec(cs))
 			c = r.ac_flac;
-		else if (/\.(aac|m4a)$/i.exec(cs))
+		else if (/\.(aac|m4[abr])$/i.exec(cs))
 			c = r.ac_aac;
 		else if (/\.(oga|ogg|opus)$/i.exec(cs) && (!can_ogg || mpl.ac2 == 'mp3'))
 			c = true;
@@ -1643,9 +1643,9 @@ mpl.init_ac2();
 
 
 var re_m3u = /\.(m3u8?)$/i;
-var re_au_native = (can_ogg || have_acode) ? /\.(aac|flac|m4a|mp3|oga|ogg|opus|wav)$/i : /\.(aac|flac|m4a|mp3|wav)$/i,
+var re_au_native = (can_ogg || have_acode) ? /\.(aac|flac|m4[abr]|mp3|oga|ogg|opus|wav)$/i : /\.(aac|flac|m4[abr]|mp3|wav)$/i,
 	re_au_vid = /\.(3gp|asf|avi|flv|m4v|mkv|mov|mp4|mpeg|mpeg2|mpegts|mpg|mpg2|nut|ogm|ogv|rm|ts|vob|webm|wmv)$/i,
-	re_au_all = /\.(aac|ac3|aif|aiff|alac|alaw|amr|ape|au|dfpwm|dts|flac|gsm|it|itgz|itxz|itz|m4a|mdgz|mdxz|mdz|mo3|mod|mp2|mp3|mpc|mptm|mt2|mulaw|oga|ogg|okt|opus|ra|s3m|s3gz|s3xz|s3z|tak|tta|ulaw|wav|wma|wv|xm|xmgz|xmxz|xmz|xpk|3gp|asf|avi|flv|m4v|mkv|mov|mp4|mpeg|mpeg2|mpegts|mpg|mpg2|nut|ogm|ogv|rm|ts|vob|webm|wmv)$/i;
+	re_au_all = /\.(aac|ac3|aif|aiff|alac|alaw|amr|ape|au|dfpwm|dts|flac|gsm|it|itgz|itxz|itz|m4[abr]|mdgz|mdxz|mdz|mo3|mod|mp2|mp3|mpc|mptm|mt2|mulaw|oga|ogg|okt|opus|ra|s3m|s3gz|s3xz|s3z|tak|tta|ulaw|wav|wma|wv|xm|xmgz|xmxz|xmz|xpk|3gp|asf|avi|flv|m4v|mkv|mov|mp4|mpeg|mpeg2|mpegts|mpg|mpg2|nut|ogm|ogv|rm|ts|vob|webm|wmv)$/i;
 
 
 // extract songs + add play column
@@ -1851,7 +1851,7 @@ function MPlayer() {
 
 		// breaks touchbar-macs
 		console.log('init fau');
-		r.fau = new Audio(SR + '/.cpr/deps/busy.mp3?_=' + TS);
+		r.fau = new Audio(SR + '/.cpr/w/deps/busy.mp3?_=' + TS);
 		r.fau.loop = true;
 		r.fau.play();
 	};
@@ -3367,7 +3367,7 @@ function evau_error(e) {
 			break;
 		case eplaya.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
 			err = L.mm_esupp;
-			if (/\.(aac|m4a)(\?|$)/i.exec(eplaya.rsrc) && !mpl.ac_aac) {
+			if (/\.(aac|m4[abr])(\?|$)/i.exec(eplaya.rsrc) && !mpl.ac_aac) {
 				try {
 					ebi('ac_aac').click();
 					QS('a.play.act').click();
@@ -5034,7 +5034,7 @@ var showfile = (function () {
 		qsr('#prism_css');
 		var el = mknod('link', 'prism_css');
 		el.rel = 'stylesheet';
-		el.href = SR + '/.cpr/deps/prism' + (light ? '' : 'd') + '.css?_=' + TS;
+		el.href = SR + '/.cpr/w/deps/prism' + (light ? '' : 'd') + '.css?_=' + TS;
 		document.head.appendChild(el);
 	};
 
@@ -5247,7 +5247,7 @@ var showfile = (function () {
 				if (!defer)
 					fun(el.firstChild);
 				else
-					import_js(SR + '/.cpr/deps/prism.js', function () { fun(); });
+					import_js(SR + '/.cpr/w/deps/prism.js', function () { fun(); });
 			}
 			if (!txt && r.wrap)
 				el.className = 'wrap';
@@ -6056,7 +6056,7 @@ function hkhelp() {
 		html.push('<table>');
 		for (var a = 0; a < c.length; a++)
 			try {
-				if (c[a].length != 2)
+				if (!Array.isArray(c[a]))
 					html.push('<tr><th colspan="2">' + esc(c[a]) + '</th></tr>');
 				else {
 					var t1 = c[a][0].replace('⇧', '<b>⇧</b>');
@@ -9017,7 +9017,7 @@ var globalcss = (function () {
 var sandboxjs = (function () {
 	var ret = '',
 		busy = false,
-		url = SR + '/.cpr/util.js?_=' + TS,
+		url = SR + '/.cpr/w/util.js?_=' + TS,
 		tag = '<script src="' + url + '"></script>';
 
 	return function () {
@@ -9054,7 +9054,7 @@ function show_md(md, name, div, url, depth) {
 		}
 
 		wfp_debounce.n--;
-		return import_js(SR + '/.cpr/deps/marked.js', function () {
+		return import_js(SR + '/.cpr/w/deps/marked.js', function () {
 			show_md(md, name, div, url, 1);
 		});
 	}

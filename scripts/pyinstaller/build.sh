@@ -57,6 +57,8 @@ rm -rf mods/magic/
     sed -ri /pickle/d mods/jinja2/_compat.py
     sed -ri '/(bccache|PackageLoader)/d' mods/jinja2/__init__.py
     af '/^class/{s=0}/^class PackageLoader/{s=1}!s' mods/jinja2/loaders.py
+    sed -ri 's/from url.*Request, urlopen.*/pass/' mods/copyparty/svchub.py
+    sed -ri 's/(.*"--vc-.*, help=).*/\1argparse.SUPPRESS)/' mods/copyparty/__main__.py
 }
 [ $w10 ] && {
     sed -ri '/(bccache|PackageLoader)/d' $spkgs/jinja2/__init__.py
@@ -84,8 +86,6 @@ excl=(
     ctypes.macholib
     curses
     email._header_value_parser
-    email.header
-    email.parser
     importlib.resources
     importlib_resources
     multiprocessing
@@ -95,8 +95,6 @@ excl=(
     pkg_resources
     PIL.EpsImagePlugin
     pyftpdlib.prefork
-    urllib.request
-    urllib.response
     urllib.robotparser
 )
 [ $w10 ] && excl+=(
@@ -111,12 +109,16 @@ excl=(
     PIL.PdfParser
     zipimport
 ) || excl+=(
+    email.header
+    email.parser
     inspect
     PIL
     PIL.ExifTags
     PIL.Image
     PIL.ImageDraw
     PIL.ImageOps
+    urllib.request
+    urllib.response
     zipfile
 )
 excl=( "${excl[@]/#/--exclude-module }" )

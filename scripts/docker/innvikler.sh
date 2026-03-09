@@ -208,7 +208,6 @@ smoketest
   statistics.py \
   tomllib \
   unittest \
-  urllib/request.* \
   venv \
   wsgiref \
   xml/dom \

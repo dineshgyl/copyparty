@@ -4,6 +4,7 @@ from __future__ import print_function, unicode_literals
 import argparse
 import atexit
 import errno
+import json
 import logging
 import os
 import re
@@ -27,6 +28,7 @@ if True:  # pylint: disable=using-constant-test
     from typing import Any, Optional, Union
 
 from .__init__ import ANYWIN, EXE, MACOS, PY2, TYPE_CHECKING, E, EnvParams, unicode
+from .__version__ import S_VERSION, VERSION
 from .authsrv import BAD_CFG, AuthSrv, derive_args, n_du_who, n_ver_who
 from .bos import bos
 from .cert import ensure_cert
@@ -75,6 +77,7 @@ from .util import (
     mp,
     odfusion,
     pybin,
+    read_utf8,
     start_log_thrs,
     start_stackmon,
     termsize,
@@ -94,6 +97,11 @@ if TYPE_CHECKING:
 
 if PY2:
     range = xrange  # type: ignore
+
+if PY2:
+    from urllib2 import Request, urlopen
+else:
+    from urllib.request import Request, urlopen
 
 
 VER_IDP_DB = 1
@@ -1236,6 +1244,13 @@ class SvcHub(object):
         except:
             raise Exception("invalid --mv-retry [%s]" % (self.args.mv_retry,))
 
+        if self.args.vc_url:
+            zi = max(1, int(self.args.vc_age))
+            if zi < 3 and "api.copyparty.eu" in self.args.vc_url:
+                zi = 3
+                self.log("root", "vc-age too low for copyparty.eu; will use 3 hours")
+            self.args.vc_age = zi
+
         al.js_utc = "false" if al.localtime else "true"
 
         al.tcolor = al.tcolor.lstrip("#")
@@ -1382,6 +1397,8 @@ class SvcHub(object):
             Daemon(self.tcpsrv.netmon, "netmon")
 
         Daemon(self.thr_httpsrv_up, "sig-hsrv-up2")
+        if self.args.vc_url:
+            Daemon(self.check_ver, "ver-chk")
 
         sigs = [signal.SIGINT, signal.SIGTERM]
         if not ANYWIN:
@@ -1778,3 +1795,79 @@ class SvcHub(object):
         zb = gzip.compress(zb)
         zs = ub64enc(zb).decode("ascii")
         self.log("stacks", zs)
+
+    def check_ver(self) -> None:
+        next_chk = 0
+        # self.args.vc_age = 2 / 60
+        fpath = os.path.join(self.E.cfg, "vuln_advisory.json")
+        while not self.stopping:
+            now = time.time()
+            if now < next_chk:
+                time.sleep(min(999, next_chk - now))
+                continue
+
+            age = 0
+            jtxt = ""
+            src = "[cache] "
+            try:
+                mtime = os.path.getmtime(fpath)
+                age = time.time() - mtime
+                if age < self.args.vc_age * 3600 - 69:
+                    zs, jtxt = read_utf8(None, fpath, True).split("\n", 1)
+                    if zs != self.args.vc_url:
+                        jtxt = ""
+            except Exception as e:
+                t = "will download advisory because cache-file %r could not be read: %s"
+                self.log("ver-chk", t % (fpath, e), 6)
+
+            if not jtxt:
+                src = ""
+                age = 0
+                try:
+                    req = Request(self.args.vc_url)
+                    with urlopen(req, timeout=30) as f:
+                        jtxt = f.read().decode("utf-8")
+                    try:
+                        with open(fpath, "wb") as f:
+                            zs = self.args.vc_url + "\n" + jtxt
+                            f.write(zs.encode("utf-8"))
+                    except Exception as e:
+                        t = "failed to write advisory to cache; %s"
+                        self.log("ver-chk", t % (e,), 3)
+                except Exception as e:
+                    t = "failed to fetch vulnerability advisory; %s"
+                    self.log("ver-chk", t % (e,), 1)
+
+            next_chk = time.time() + 699
+            if not jtxt:
+                continue
+
+            try:
+                advisories = json.loads(jtxt)
+                for adv in advisories:
+                    if adv.get("state") == "closed":
+                        continue
+                    vuln = {}
+                    for x in adv["vulnerabilities"]:
+                        if x["package"]["name"].lower() == "copyparty":
+                            vuln = x
+                            break
+                    if not vuln:
+                        continue
+                    sver = vuln["patched_versions"].strip(".v")
+                    tver = tuple([int(x) for x in sver.split(".")])
+                    if VERSION < tver:
+                        zs = json.dumps(adv, indent=2)
+                        t = "your version (%s) has a vulnerability! please upgrade:\n%s"
+                        self.log("ver-chk", t % (S_VERSION, zs), 1)
+                        self.broker.say("httpsrv.set_bad_ver")
+                        if self.args.vc_exit:
+                            self.sigterm()
+                        return
+                    else:
+                        t = "%sok; v%s and newer is safe"
+                        self.log("ver-chk", t % (src, sver), 2)
+                next_chk = time.time() + self.args.vc_age * 3600 - age
+            except Exception as e:
+                t = "failed to process vulnerability advisory; %s"
+                self.log("ver-chk", t % (min_ex()), 1)

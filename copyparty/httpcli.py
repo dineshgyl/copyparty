@@ -47,6 +47,7 @@ from .util import (
     E_SCK_WR,
     HAVE_SQLITE3,
     HTTPCODE,
+    SAFE_MIMES,
     UTC,
     VPTL_MAC,
     VPTL_OS,
@@ -105,6 +106,7 @@ from .util import (
     runhook,
     s2hms,
     s3enc,
+    safe_mime,
     sanitize_fn,
     sanitize_vpath,
     sendfile_kern,
@@ -156,6 +158,7 @@ BADXFF = " due to dangerous misconfiguration (the http-header specified by --xff
 BADXFF2 = ". Some copyparty features are now disabled as a safety measure.\n\n\n"
 BADXFP = ', or change the copyparty global-option "xf-proto" to another header-name to read this value from. Alternatively, if your reverseproxy is not able to provide a header similar to "X-Forwarded-Proto", then you must tell copyparty which protocol to assume; either "--xf-proto-fb=http" or "--xf-proto-fb=https"'
 BADXFFB = "<b>NOTE: serverlog has a message regarding your reverse-proxy config</b>"
+BADVER = '<a class="r" href="https://github.com/9001/copyparty/security/advisories">Please upgrade copyparty; Your version has a vulnerability</a><p>(only users with permission "a" or "A" can see this message)</p>'
 
 H_CONN_KEEPALIVE = "Connection: Keep-Alive"
 H_CONN_CLOSE = "Connection: Close"
@@ -331,7 +334,6 @@ class HttpCli(object):
     def run(self) -> bool:
         """returns true if connection can be reused"""
         self.out_headers = {
-            "Vary": self.args.http_vary,
             "Cache-Control": "no-store, max-age=0",
         }
 
@@ -854,9 +856,6 @@ class HttpCli(object):
 
         self.s.settimeout(self.args.s_tbody or None)
 
-        if "norobots" in vn.flags:
-            self.out_headers["X-Robots-Tag"] = "noindex, nofollow"
-
         if "html_head_s" in vn.flags:
             self.html_head += vn.flags["html_head_s"]
 
@@ -1071,6 +1070,7 @@ class HttpCli(object):
 
     def send_headers(
         self,
+        oh_k: str,
         length: Optional[int],
         status: int = 200,
         mime: Optional[str] = None,
@@ -1113,7 +1113,11 @@ class HttpCli(object):
                 self.cbonk(self.conn.hsrv.gmal, zs, "cc_hdr", "Cc in out-hdr")
                 raise Pebkac(999)
 
+        response.append(self.vn.flags[oh_k])
+
         if self.args.ohead and self.do_log:
+            zs = response.pop()[:-4]
+            response.extend(zs.split("\r\n"))
             keys = self.args.ohead
             if "*" in keys:
                 lines = response[1:]
@@ -1125,8 +1129,8 @@ class HttpCli(object):
             for zs in lines:
                 hk, hv = zs.split(": ")
                 self.log("[O] {}: \033[33m[{}]".format(hk, hv), 5)
+            response.append("\r\n")
 
-        response.append("\r\n")
         try:
             self.s.sendall("\r\n".join(response).encode("utf-8"))
         except:
@@ -1183,7 +1187,7 @@ class HttpCli(object):
             except:
                 pass
 
-        self.send_headers(len(body), status, mime, headers)
+        self.send_headers("oh_g", len(body), status, mime, headers)
 
         try:
             if self.mode != "HEAD":
@@ -1380,11 +1384,15 @@ class HttpCli(object):
             if self.vpath == ".cpr/metrics":
                 return self.conn.hsrv.metrics.tx(self)
 
-            res_path = "web/" + self.vpath[5:]
+            if self.vpath.startswith(".cpr/w/"):
+                res_path = "web/" + self.vpath[7:]
+            else:
+                res_path = "web/" + self.vpath[5:]
+
             if res_path in RES:
                 ap = self.E.mod_ + res_path
                 if bos.path.exists(ap) or bos.path.exists(ap + ".gz"):
-                    return self.tx_file(ap)
+                    return self.tx_file("oh_g", ap)
                 else:
                     return self.tx_res(res_path)
 
@@ -1398,7 +1406,7 @@ class HttpCli(object):
                     # return mimetype matching request extension
                     self.ouparam["dl"] = res_path.split("/")[-1]
                 if bos.path.exists(ap) or bos.path.exists(ap + ".gz"):
-                    return self.tx_file(ap)
+                    return self.tx_file("oh_g", ap)
                 else:
                     return self.tx_res(res_path)
 
@@ -1715,7 +1723,10 @@ class HttpCli(object):
                 if zi.file_size >= maxsz:
                     raise Pebkac(404, "zip bomb defused")
                 with zf.open(zi, "r") as fi:
-                    self.send_headers(length=zi.file_size, mime=guess_mime(inner_path))
+                    mime = guess_mime(inner_path)
+                    if mime not in SAFE_MIMES and "nohtml" in self.vn.flags:
+                        mime = safe_mime(mime)
+                    self.send_headers("oh_f", length=zi.file_size, mime=mime)
 
                     sendfile_py(
                         self.log,
@@ -1911,7 +1922,11 @@ class HttpCli(object):
         chunksz = 0x7FF8  # preferred by nginx or cf (dunno which)
 
         self.send_headers(
-            None, 207, "text/xml; charset=" + enc, {"Transfer-Encoding": "chunked"}
+            "oh_f",
+            None,
+            207,
+            "text/xml; charset=" + enc,
+            {"Transfer-Encoding": "chunked"},
         )
 
         ap = ""
@@ -2118,7 +2133,7 @@ class HttpCli(object):
             self.log("%s tried to lock %r" % (self.uname, "/" + self.vpath))
             raise Pebkac(401, "authenticate")
 
-        self.send_headers(None, 204)
+        self.send_headers("oh_f", None, 204)
         return True
 
     def handle_mkcol(self) -> bool:
@@ -2220,7 +2235,7 @@ class HttpCli(object):
             oh["Ms-Author-Via"] = "DAV"
 
         # winxp-webdav doesnt know what 204 is
-        self.send_headers(0, 200)
+        self.send_headers("oh_f", 0, 200)
         return True
 
     def handle_delete(self) -> bool:
@@ -2765,8 +2780,9 @@ class HttpCli(object):
         vpath = quotep(vpath)
 
         if self.args.up_site:
-            url = "%s%s%s" % (
+            url = "%s%s%s%s" % (
                 self.args.up_site,
+                self.args.RS,
                 vpath,
                 vsuf,
             )
@@ -3051,7 +3067,7 @@ class HttpCli(object):
                 raise Pebkac(500, t % zt)
             ret["purl"] = vp_req + ret["purl"][len(vp_vfs) :]
 
-        if self.is_vproxied and not self.args.up_site:
+        if self.is_vproxied:
             if "purl" in ret:
                 ret["purl"] = self.args.SR + ret["purl"]
 
@@ -3960,7 +3976,7 @@ class HttpCli(object):
 
             vpath = vjoin(upload_vpath, lfn)
             if self.args.up_site:
-                ah_url = j_url = self.args.up_site + quotep(vpath) + vsuf
+                ah_url = j_url = self.args.up_site + self.args.RS + quotep(vpath) + vsuf
                 rel_url = "/" + j_url.split("//", 1)[-1].split("/", 1)[-1]
             else:
                 ah_url = rel_url = "/%s%s%s" % (self.args.RS, quotep(vpath), vsuf)
@@ -4522,11 +4538,11 @@ class HttpCli(object):
             if self.do_log:
                 self.log(logmsg)
 
-            self.send_headers(length=file_sz, status=status, mime=mime)
+            self.send_headers("oh_g", length=file_sz, status=status, mime=mime)
             return True
 
         ret = True
-        self.send_headers(length=file_sz, status=status, mime=mime)
+        self.send_headers("oh_g", length=file_sz, status=status, mime=mime)
         remains = sendfile_py(
             self.log,
             0,
@@ -4551,7 +4567,7 @@ class HttpCli(object):
 
         return ret
 
-    def tx_file(self, req_path: str, ptop: Optional[str] = None) -> bool:
+    def tx_file(self, oh_k: str, req_path: str, ptop: Optional[str] = None) -> bool:
         status = 200
         logmsg = "{:4} {} ".format("", self.req)
         logtail = ""
@@ -4754,8 +4770,8 @@ class HttpCli(object):
         else:
             mime = guess_mime(cdis)
 
-        if "nohtml" in self.vn.flags and "html" in mime:
-            mime = "text/plain; charset=utf-8"
+        if mime not in SAFE_MIMES and "nohtml" in self.vn.flags:
+            mime = safe_mime(mime)
 
         self.out_headers["Accept-Ranges"] = "bytes"
         logmsg += unicode(status) + logtail
@@ -4764,7 +4780,7 @@ class HttpCli(object):
             if self.do_log:
                 self.log(logmsg)
 
-            self.send_headers(length=upper - lower, status=status, mime=mime)
+            self.send_headers(oh_k, length=upper - lower, status=status, mime=mime)
             return True
 
         dls = self.conn.hsrv.dls
@@ -4796,7 +4812,7 @@ class HttpCli(object):
 
         ret = True
         with open_func(*open_args) as f:
-            self.send_headers(length=upper - lower, status=status, mime=mime)
+            self.send_headers(oh_k, length=upper - lower, status=status, mime=mime)
 
             sendfun = sendfile_kern if use_sendfile else sendfile_py
             remains = sendfun(
@@ -4829,7 +4845,7 @@ class HttpCli(object):
         mime: str,
     ) -> None:
         vf = self.vn.flags
-        self.send_headers(length=None, status=status, mime=mime)
+        self.send_headers("oh_f", length=None, status=status, mime=mime)
         abspath: bytes = open_args[0]
         sec_rate = vf["tail_rate"]
         sec_max = vf["tail_tmax"]
@@ -4969,7 +4985,7 @@ class HttpCli(object):
         logmsg: str,
     ) -> bool:
         M = 1048576
-        self.send_headers(length=upper - lower, status=status, mime=mime)
+        self.send_headers("oh_f", length=upper - lower, status=status, mime=mime)
         wr_slp = self.args.s_wr_slp
         wr_sz = self.args.s_wr_sz
         file_size = job["size"]
@@ -5182,7 +5198,9 @@ class HttpCli(object):
 
         cdis = gen_content_disposition("%s.%s" % (fn, ext))
         self.log(repr(cdis))
-        self.send_headers(None, mime=mime, headers={"Content-Disposition": cdis})
+        self.send_headers(
+            "oh_f", None, mime=mime, headers={"Content-Disposition": cdis}
+        )
 
         fgen = vn.zipgen(vpath, rem, set(items), self.uname, False, dots, scandir)
         # for f in fgen: print(repr({k: f[k] for k in ["vp", "ap"]}))
@@ -5390,7 +5408,7 @@ class HttpCli(object):
         if len(html) != 2:
             raise Exception("boundary appears in " + tpl)
 
-        self.send_headers(sz_md + len(html[0]) + len(html[1]), status)
+        self.send_headers("oh_g", sz_md + len(html[0]) + len(html[1]), status)
 
         logmsg += unicode(status)
         if self.mode == "HEAD" or not do_send:
@@ -5627,7 +5645,13 @@ class HttpCli(object):
             no304=self.no304(),
             k304vis=self.args.k304 > 0,
             no304vis=self.args.no304 > 0,
-            msg=BADXFFB if hasattr(self, "bad_xff") else "",
+            msg=(
+                BADVER
+                if self.conn.hsrv.bad_ver and self.can_admin
+                else BADXFFB
+                if hasattr(self, "bad_xff")
+                else ""
+            ),
             ver=S_VERSION if show_ver else "",
             chpw=self.args.chpw and self.uname != "*",
             ahttps="" if self.is_https else "https://" + self.host + self.req,
@@ -6293,10 +6317,10 @@ class HttpCli(object):
 
         if self.args.shr_site:
             site = self.args.shr_site[:-1]
-        elif self.is_vproxied:
-            site = self.args.SR
         else:
             site = ""
+        if self.is_vproxied:
+            site += self.args.SR
 
         html = self.j2s(
             "shares",
@@ -6603,9 +6627,10 @@ class HttpCli(object):
 
         # NOTE: several clients (frontend, party-up) expect url at response[15:]
         if self.args.shr_site:
-            surl = "created share: %s%s%s/%s" % (
-                self.args.shr_site,
-                self.args.shr[1:],
+            surl = "created share: %s%s%s%s/%s" % (
+                self.args.shr_site[:-1],
+                self.args.SR,
+                self.args.shr,
                 skey,
                 fn,
             )
@@ -6897,7 +6922,7 @@ class HttpCli(object):
             add_og = True
             og_fn = ""
 
-        if "b" in self.uparam:
+        if "b" in self.uparam and "norobots" not in vn.flags:
             self.out_headers["X-Robots-Tag"] = "noindex, nofollow"
 
         is_dir = stat.S_ISDIR(st.st_mode)
@@ -6969,7 +6994,7 @@ class HttpCli(object):
                         raise
 
                 if thp:
-                    return self.tx_file(thp)
+                    return self.tx_file("oh_f", thp)
 
                 if th_fmt == "p":
                     raise Pebkac(404)
@@ -7058,9 +7083,9 @@ class HttpCli(object):
 
             if not add_og or not og_fn:
                 if st.st_size or "nopipe" in vn.flags:
-                    return self.tx_file(abspath, None)
+                    return self.tx_file("oh_f", abspath, None)
                 else:
-                    return self.tx_file(abspath, vn.get_dbv("")[0].realpath)
+                    return self.tx_file("oh_f", abspath, vn.get_dbv("")[0].realpath)
 
         elif is_dir and not self.can_read:
             if use_dirkey:
@@ -7408,7 +7433,7 @@ class HttpCli(object):
                         return self.redirect(
                             self.vpath + "/", flavor="redirecting to", use302=True
                         )
-                    return self.tx_file(ap)  # is no-cache
+                    return self.tx_file("oh_f", ap)  # is no-cache
 
         if icur:
             mte = vn.flags.get("mte") or {}
