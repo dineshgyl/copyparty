@@ -28,7 +28,11 @@
 	{%- endif %}
 
 	{%- if logues[0] %}
-	<div>{{ logues[0] }}</div><br />
+		{%- if sb_lg %}
+	<div>{{ logues[0][:2000]|e }}</div><br />
+		{%- else %}
+	<div>{{ logues[0][:2000] }}</div><br />
+		{%- endif %}
 	{%- endif %}
 
 	<table id="files">
@@ -53,7 +57,11 @@
 	</table>
 
 	{%- if logues[1] %}
-	<div>{{ logues[1] }}</div><br />
+		{%- if sb_lg %}
+	<div>{{ logues[1][:2000]|e }}</div><br />
+		{%- else %}
+	<div>{{ logues[1][:2000] }}</div><br />
+		{%- endif %}
 	{%- endif %}
 
 	<h2><a href="{{ r }}/{{ url_suf }}{{ url_suf and '&amp;' or '?' }}h">control-panel</a></h2>

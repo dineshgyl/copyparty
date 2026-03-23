@@ -30,6 +30,10 @@ from .util import (
     Daemon,
     ODict,
     Pebkac,
+    exclude_dotfiles,
+    exclude_dotfiles_ls,
+    exclude_dothidden,
+    exclude_dothidden_ls,
     ipnorm,
     min_ex,
     read_utf8,
@@ -349,11 +353,13 @@ class SFTP_Srv(paramiko.SFTPServerInterface):
             cr, cw, cm, cd, _, _, _, _, _ = avn.uaxs[self.uname]
             if r and not cr or w and not cw or m and not cm or d and not cd:
                 raise OSError(errno.EPERM, "permission denied in [/%s]" % (vpath,))
+        else:
+            ap = vn.canonical(rem, False)
 
         if "bcasechk" in vn.flags and not vn.casechk(rem, True):
             raise OSError(errno.ENOENT, "file does not exist case-sensitively")
 
-        return os.path.join(vn.realpath, rem), vn, rem
+        return ap, vn, rem
 
     def list_folder(self, path: str) -> list[SATTR] | int:
         try:
@@ -399,21 +405,27 @@ class SFTP_Srv(paramiko.SFTPServerInterface):
             self.log("ls(%s): vfs-vols; |%d|" % (path, len(ret)))
             return ret
 
-        _, vfs_ls, vfs_virt = vn.ls(
+        fsroot, vfs_ls, vfs_virt = vn.ls(
             rem,
             self.uname,
             not self.args.no_scandir,
             [[True, False], [False, True]],
             throw=True,
         )
+        vnames = list(vfs_virt)
+        if self.uname not in vn.axs.udot:
+            if "dothidden" in vn.flags and ".hidden" in [x[0] for x in vfs_ls]:
+                vfs_ls = exclude_dothidden_ls(vfs_ls, fsroot)
+                vnames = exclude_dothidden(vnames, fsroot)
+            else:
+                vfs_ls = exclude_dotfiles_ls(vfs_ls)
+                vnames = exclude_dotfiles(vnames)
         ret = [SATTR.from_stat(x[1], filename=x[0]) for x in vfs_ls]
         for zs, vn2 in vfs_virt.items():
-            if not vn2.realpath:
+            if not vn2.realpath or zs not in vnames:
                 continue
             st = bos.stat(vn2.realpath)
             ret.append(SATTR.from_stat(st, filename=zs))
-        if self.uname not in vn.axs.udot:
-            ret = [x for x in ret if not x.filename.split("/")[-1].startswith(".")]
         ret.sort(key=lambda x: x.filename)
         self.log("ls(%s): |%d|" % (path, len(ret)))
         return ret
@@ -484,7 +496,7 @@ class SFTP_Srv(paramiko.SFTPServerInterface):
 
         try:
             vn, rem = self.asrv.vfs.get(vp, self.uname, rd, wr)
-            ap = os.path.join(vn.realpath, rem)
+            ap = vn.canonical(rem, False)
             vf = vn.flags
         except Pebkac as ex:
             t = "denied open file [%s], iflag=%s, read=%s, write=%s: %s"
@@ -657,7 +669,7 @@ class SFTP_Srv(paramiko.SFTPServerInterface):
         self.log("mkdir(%s)" % (vp,))
         try:
             vn, rem = self.asrv.vfs.get(vp, self.uname, False, True)
-            ap = os.path.join(vn.realpath, rem)
+            ap = vn.canonical(rem, False)
             bos.makedirs(ap, vf=vn.flags)  # filezilla expects this
             if attr is not None:
                 paramiko.SFTPServer.set_file_attr(ap, attr)

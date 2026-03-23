@@ -21,10 +21,6 @@ from . import util as Util
 from .__init__ import TYPE_CHECKING, EnvParams
 from .authsrv import AuthSrv  # typechk
 from .httpcli import HttpCli
-from .ico import Ico
-from .mtag import HAVE_FFMPEG
-from .th_cli import ThumbCli
-from .th_srv import HAVE_PIL, HAVE_VIPS
 from .u2idx import U2idx
 from .util import HMaccas, NetMap, shut_socket
 
@@ -69,21 +65,15 @@ class HttpConn(object):
         self.bans: dict[str, int] = hsrv.bans
         self.aclose: dict[str, int] = hsrv.aclose
 
-        enth = (HAVE_PIL or HAVE_VIPS or HAVE_FFMPEG) and not self.args.no_thumb
-        self.thumbcli: Optional[ThumbCli] = ThumbCli(hsrv) if enth else None  # mypy404
-        self.ico: Ico = Ico(self.args)  # mypy404
-
         self.t0: float = time.time()  # mypy404
         self.freshen_pwd: float = 0.0
         self.stopping = False
         self.nreq: int = -1  # mypy404
         self.nbyte: int = 0  # mypy404
         self.u2idx: Optional[U2idx] = None
+        self.lf_url: Optional[Pattern[str]] = self.args.lf_url
         self.log_func: "Util.RootLogger" = hsrv.log  # mypy404
         self.log_src: str = "httpconn"  # mypy404
-        self.lf_url: Optional[Pattern[str]] = (
-            re.compile(self.args.lf_url) if self.args.lf_url else None
-        )  # mypy404
         self.set_rproxy()
 
     def shutdown(self) -> None:

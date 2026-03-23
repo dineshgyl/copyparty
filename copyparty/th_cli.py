@@ -24,7 +24,7 @@ IMG_EXTS = set(["webp", "jpg", "png", "jxl"])
 
 
 class ThumbCli(object):
-    def __init__(self, hsrv: "HttpSrv") -> None:
+    def __init__(self, hsrv: "HttpSrv", c: dict[str, set[str]]) -> None:
         self.broker = hsrv.broker
         self.log_func = hsrv.log
         self.args = hsrv.args
@@ -32,16 +32,6 @@ class ThumbCli(object):
 
         # cache on both sides for less broker spam
         self.cooldown = Cooldown(self.args.th_poke)
-
-        try:
-            c = hsrv.th_cfg
-            if not c:
-                raise Exception()
-        except:
-            c = {
-                k: set()
-                for k in ["thumbable", "pil", "vips", "raw", "ffi", "ffv", "ffa"]
-            }
 
         self.thumbable = c["thumbable"]
         self.fmt_pil = c["pil"]
@@ -53,8 +43,8 @@ class ThumbCli(object):
 
         # defer args.th_ff_jpg, can change at runtime
         nonpil = next((x for x in self.args.th_dec if x in ("vips", "ff")), None)
-        self.can_webp = H_PIL_WEBP or nonpil
-        self.can_jxl = H_PIL_JXL or nonpil
+        self.can_webp = (H_PIL_WEBP or nonpil) and not self.args.th_no_webp
+        self.can_jxl = (H_PIL_JXL or nonpil) and not self.args.th_no_jxl
 
     def log(self, msg: str, c: Union[int, str] = 0) -> None:
         self.log_func("thumbcli", msg, c)
@@ -95,23 +85,20 @@ class ThumbCli(object):
         if rem.startswith(".hist/th/") and rem.split(".")[-1] in IMG_EXTS:
             return os.path.join(ptop, rem)
 
-        if fmt[:1] in "jwx" and fmt != "wav":
-            sfmt = fmt[:1]
+        sfmt = fmt[:1]
+        if sfmt in "jwx" and fmt != "wav":
 
             if sfmt == "j" and self.args.th_no_jpg:
                 sfmt = "w"
 
             if sfmt == "w":
-                if (
-                    self.args.th_no_webp
-                    or not self.can_webp
-                    or (self.args.th_ff_jpg and (not is_img or preferred == "ff"))
+                if not self.can_webp or (
+                    self.args.th_ff_jpg and (not is_img or preferred == "ff")
                 ):
                     sfmt = "j"
 
-            if sfmt == "x":
-                if self.args.th_no_jxl or not self.can_jxl:
-                    sfmt = "w"
+            if sfmt == "x" and not self.can_jxl:
+                sfmt = "w"
 
             vf_crop = dbv.flags["crop"]
             vf_th3x = dbv.flags["th3x"]
@@ -128,7 +115,7 @@ class ThumbCli(object):
 
             fmt = sfmt
 
-        elif fmt[:1] == "p" and not is_au and not is_vid:
+        elif sfmt == "p" and not is_au and not is_vid:
             t = "cannot thumbnail %r: png only allowed for waveforms"
             self.log(t % (rem,), 6)
             return None

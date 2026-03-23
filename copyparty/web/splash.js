@@ -65,12 +65,20 @@ o = ebi('u');
 if (o && /[0-9]+$/.exec(o.innerHTML))
 	o.innerHTML = shumantime(o.innerHTML);
 
-o = ebi('uhash')
+o = ebi('uhash');
 if (o)
 	o.value = '' + location.hash;
 
 if (/\&re=/.test('' + location))
 	ebi('a').className = 'af g';
+
+o = ebi('v');
+if (o) o.onclick = function (e) {
+	if (e && e.shiftKey) {
+		ev(e);
+		document.location = '//youtu.be/8Ok5Sey1MoU';
+	}
+};
 
 (function() {
 	if (!ebi('x'))

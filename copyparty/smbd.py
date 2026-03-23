@@ -191,7 +191,7 @@ class SMB(object):
         vfs, rem = self.asrv.vfs.get(vpath, uname, *perms)
         if not vfs.realpath:
             raise Exception("unmapped vfs")
-        return vfs, vjoin(vfs.realpath, rem)
+        return vfs, vfs.canonical(rem, False)
 
     def _listdir(self, vpath: str, *a: Any, **ka: Any) -> list[str]:
         vpath = vpath.replace("\\", "/").lstrip("/")

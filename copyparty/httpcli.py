@@ -66,6 +66,8 @@ from .util import (
     eol_conv,
     exclude_dotfiles,
     exclude_dotfiles_ls,
+    exclude_dothidden,
+    exclude_dothidden_ls,
     formatdate,
     fsenc,
     gen_content_disposition,
@@ -228,8 +230,7 @@ class HttpCli(object):
         self.args = conn.args  # mypy404
         self.E: EnvParams = self.args.E
         self.asrv = conn.asrv  # mypy404
-        self.ico = conn.ico  # mypy404
-        self.thumbcli = conn.thumbcli  # mypy404
+        self.thumbcli = conn.hsrv.thumbcli
         self.u2fh = conn.u2fh  # mypy404
         self.pipes = conn.pipes  # mypy404
         self.log_func = conn.log_func  # mypy404
@@ -534,7 +535,7 @@ class HttpCli(object):
                 else:
                     self.keepalive = False
 
-        ptn: Optional[Pattern[str]] = self.conn.lf_url  # mypy404
+        ptn = self.conn.lf_url
         self.do_log = not ptn or not ptn.search(self.req)
 
         if self.args.ihead and self.do_log:
@@ -1847,7 +1848,7 @@ class HttpCli(object):
                 raise Pebkac(401, "authenticate")
 
         elif depth == "1":
-            _, vfs_ls, vfs_virt = vn.ls(
+            fsroot, vfs_ls, vfs_virt = vn.ls(
                 rem,
                 self.uname,
                 not self.args.no_scandir,
@@ -1858,13 +1859,20 @@ class HttpCli(object):
             if not self.can_read:
                 vfs_ls = []
             if not self.can_dot:
-                vfs_ls = exclude_dotfiles_ls(vfs_ls)
+                if "dothidden" in vn.flags and ".hidden" in [x[0] for x in vfs_ls]:
+                    vfs_ls = exclude_dothidden_ls(vfs_ls, fsroot)
+                    self.dothid = True
+                else:
+                    vfs_ls = exclude_dotfiles_ls(vfs_ls)
             fgen = [{"vp": vp, "st": st} for vp, st in vfs_ls]
 
             if vfs_virt:
                 zsl = list(vfs_virt)
                 if not self.can_dot:
-                    zsl = exclude_dotfiles(zsl)
+                    if "dothidden" in vn.flags and getattr(self, "dothid", False):
+                        zsl = exclude_dothidden(zsl, fsroot)
+                    else:
+                        zsl = exclude_dotfiles(zsl)
                 fgen += [{"vp": v, "st": vst} for v in zsl]
 
         else:
@@ -4770,7 +4778,7 @@ class HttpCli(object):
         else:
             mime = guess_mime(cdis)
 
-        if mime not in SAFE_MIMES and "nohtml" in self.vn.flags:
+        if mime not in SAFE_MIMES and "nohtml" in self.vn.flags and oh_k != "oh_g":
             mime = safe_mime(mime)
 
         self.out_headers["Accept-Ranges"] = "bytes"
@@ -5288,7 +5296,7 @@ class HttpCli(object):
         # chrome cannot handle more than ~2000 unique SVGs
         # so url-param "raster" returns a png/webp instead
         # (useragent-sniffing kinshi due to caching proxies)
-        mime, ico = self.ico.get(txt, not small, "raster" in self.uparam)
+        mime, ico = self.conn.hsrv.ico.get(txt, not small, "raster" in self.uparam)
 
         lm = formatdate(self.E.t0)
         self.reply(ico, mime=mime, headers={"Last-Modified": lm})
@@ -5647,7 +5655,7 @@ class HttpCli(object):
             no304vis=self.args.no304 > 0,
             msg=(
                 BADVER
-                if self.conn.hsrv.bad_ver and self.can_admin
+                if self.conn.hsrv.bad_ver and avol
                 else BADXFFB
                 if hasattr(self, "bad_xff")
                 else ""
@@ -5863,6 +5871,7 @@ class HttpCli(object):
             dk_sz = vn.flags.get("dk")
         except:
             dk_sz = None
+            vn = vfs
             vfs_ls = []
             vfs_virt = {}
             for v in self.rvol:
@@ -5873,7 +5882,11 @@ class HttpCli(object):
         dirs = [x[0] for x in vfs_ls if stat.S_ISDIR(x[1].st_mode)]
 
         if not dots:
-            dirs = exclude_dotfiles(dirs)
+            if "dothidden" in vn.flags and ".hidden" in [x[0] for x in vfs_ls]:
+                dirs = exclude_dothidden(dirs, fsroot)
+                self.dothid = True
+            else:
+                dirs = exclude_dotfiles(dirs)
 
         dirs = [quotep(x) for x in dirs if x != excl]
 
@@ -5903,7 +5916,10 @@ class HttpCli(object):
                     x += "\n"
                 dirs.append(quotep(x))
             if not dots:
-                dirs = exclude_dotfiles(dirs)
+                if "dothidden" in vn.flags and getattr(self, "dothid", False):
+                    dirs = exclude_dothidden(dirs, fsroot)
+                else:
+                    dirs = exclude_dotfiles(dirs)
 
         ret["a"] = dirs
         return ret
@@ -6580,13 +6596,18 @@ class HttpCli(object):
         s_rd = "read" in req["perms"]
         s_wr = "write" in req["perms"]
         s_get = "get" in req["perms"]
+        s_dot = "dot" in req["perms"]
         s_axs = [s_rd, s_wr, False, False, s_get]
+        s_axsd = s_axs + [s_dot]
 
         if s_axs == [False] * 5:
             raise Pebkac(400, "select at least one permission")
 
         try:
             vfs, rem = self.asrv.vfs.get(vp, self.uname, *s_axs)
+            can_dot = self.uname in vfs.axs.udot
+            if s_dot and not can_dot:
+                raise Exception()
         except:
             raise Pebkac(400, "you dont have all the perms you tried to grant")
 
@@ -6599,7 +6620,10 @@ class HttpCli(object):
             raise Pebkac(400, "you dont have perms to create shares from this volume")
 
         ap, reals, _ = vfs.ls(rem, self.uname, not self.args.no_scandir, [s_axs])
-        rfns = set([x[0] for x in reals])
+        zsl = [x[0] for x in reals]
+        if not can_dot:
+            zsl = exclude_dotfiles(zsl)
+        rfns = set(zsl)
         for fn in fns:
             if fn not in rfns:
                 raise Pebkac(400, "selected file not found on disk: %r" % (fn,))
@@ -6610,7 +6634,7 @@ class HttpCli(object):
         sexp = req["exp"]
         exp = int(sexp) if sexp else 0
         exp = now + exp * 60 if exp else 0
-        pr = "".join(zc for zc, zb in zip("rwmdg", s_axs) if zb)
+        pr = "".join(zc for zc, zb in zip("rwmdg.", s_axsd) if zb)
 
         q = "insert into sh values (?,?,?,?,?,?,?,?)"
         cur.execute(q, (skey, pw, vp, pr, len(fns), self.uname, now, exp))
@@ -7146,6 +7170,8 @@ class HttpCli(object):
             perms.append("move")
         if self.can_delete:
             perms.append("delete")
+        if self.can_dot:
+            perms.append("dot")
         if self.can_get:
             perms.append("get")
         if self.can_upget:
@@ -7294,7 +7320,10 @@ class HttpCli(object):
         if not self.can_dot or (
             "dots" not in self.uparam and (is_ls or "dots" not in self.cookies)
         ):
-            ls_names = exclude_dotfiles(ls_names)
+            if "dothidden" in vf and ".hidden" in ls_names:
+                ls_names = exclude_dothidden(ls_names, fsroot)
+            else:
+                ls_names = exclude_dotfiles(ls_names)
 
         add_dk = vf.get("dk")
         add_fk = vf.get("fk")

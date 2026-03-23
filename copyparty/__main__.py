@@ -1606,7 +1606,7 @@ def add_optouts(ap):
 def add_safety(ap):
     ap2 = ap.add_argument_group("safety options")
     ap2.add_argument("-s", action="count", default=0, help="increase safety: Disable thumbnails / potentially dangerous software (ffmpeg/pillow/vips), hide partial uploads, avoid crawlers.\n └─Alias of\033[32m --dotpart --no-thumb --no-mtag-ff --no-robots --force-js")
-    ap2.add_argument("-ss", action="store_true", help="further increase safety: Prevent js-injection, accidental move/delete, broken symlinks, webdav requires login, 404 on 403, ban on excessive 404s.\n └─Alias of\033[32m -s --unpost=0 --no-del --no-mv --reflink --dav-auth --vague-403 -nih")
+    ap2.add_argument("-ss", action="store_true", help="further increase safety: Prevent js-injection, accidental move/delete, broken symlinks, webdav requires login, 404 on 403, ban on excessive 404s.\n └─Alias of\033[32m -s --no-html --no-readme --no-logues --unpost=0 --no-del --no-mv --reflink --dav-auth --vague-403 -nih")
     ap2.add_argument("-sss", action="store_true", help="further increase safety: Enable logging to disk, scan for dangerous symlinks.\n └─Alias of\033[32m -ss --no-dav --no-logues --no-readme -lo=cpp-%%Y-%%m%%d-%%H%%M%%S.txt.xz --ls=**,*,ln,p,r")
     ap2.add_argument("--ls", metavar="U[,V[,F]]", type=u, default="", help="do a sanity/safety check of all volumes on startup; arguments \033[33mUSER\033[0m,\033[33mVOL\033[0m,\033[33mFLAGS\033[0m (see \033[33m--help-ls\033[0m); example [\033[32m**,*,ln,p,r\033[0m]")
     ap2.add_argument("--xvol", action="store_true", help="never follow symlinks leaving the volume root, unless the link is into another volume where the user has similar access (volflag=xvol)")
@@ -1617,6 +1617,8 @@ def add_safety(ap):
     ap2.add_argument("--no-dot-ren", action="store_true", help="disallow renaming dotfiles; makes it impossible to turn something into a dotfile")
     ap2.add_argument("--no-logues", action="store_true", help="disable rendering .prologue/.epilogue.html into directory listings")
     ap2.add_argument("--no-readme", action="store_true", help="disable rendering readme/preadme.md into directory listings")
+    ap2.add_argument("--no-script", action="store_true", help="disables javascript in html files; helps prevent XSS but kills interactive websites (volflag=noscript)")
+    ap2.add_argument("--no-html", action="store_true", help="show html-files as plain text; helps prevent XSS but kills websites/blogs, also enables --no-script (volflag=nohtml)")
     ap2.add_argument("--vague-403", action="store_true", help="send 404 instead of 403 (security through ambiguity, very enterprise). \033[1;31mWARNING:\033[0m Not compatible with WebDAV")
     ap2.add_argument("--force-js", action="store_true", help="don't send folder listings as HTML, force clients to use the embedded json instead -- slight protection against misbehaving search engines which ignore \033[33m--no-robots\033[0m")
     ap2.add_argument("--no-robots", action="store_true", help="adds http and html headers asking search engines to not index anything (volflag=norobots)")
@@ -1658,7 +1660,7 @@ def add_shutdown(ap):
     ap2 = ap.add_argument_group("shutdown options")
     ap2.add_argument("--ign-ebind", action="store_true", help="continue running even if it's impossible to listen on some of the requested endpoints")
     ap2.add_argument("--ign-ebind-all", action="store_true", help="continue running even if it's impossible to receive connections at all")
-    ap2.add_argument("--exit", metavar="WHEN", type=u, default="", help="shutdown after \033[33mWHEN\033[0m has finished; [\033[32mcfg\033[0m] config parsing, [\033[32midx\033[0m] volscan + multimedia indexing")
+    ap2.add_argument("--exit", metavar="WHEN", type=u, default="", help="shutdown after \033[33mWHEN\033[0m has finished; [\033[32mcfg\033[0m] config parsing, [\033[32midx\033[0m] volscan + multimedia indexing, [\033[32mthgen\033[0m] thumbnail-pregen")
 
 
 def add_logging(ap):
@@ -1721,9 +1723,12 @@ def add_thumbnail(ap):
     ap2.add_argument("--th-no-jxl", action="store_true", help="disable jpeg-xl output")
     ap2.add_argument("--th-ff-jpg", action="store_true", help="force jpg output for video thumbs (avoids issues on some FFmpeg builds)")
     ap2.add_argument("--th-ff-swr", action="store_true", help="use swresample instead of soxr for audio thumbs (faster, lower accuracy, avoids issues on some FFmpeg builds)")
+    ap2.add_argument("--th-vips-jxl", metavar="N", type=int, default=1, help="when to allow generating jxl thumbnails with libvips; 0=never, 1=musl-mallocng, 2=always")
     ap2.add_argument("--th-poke", metavar="SEC", type=int, default=300, help="activity labeling cooldown -- avoids doing keepalive pokes (updating the mtime) on thumbnail folders more often than \033[33mSEC\033[0m seconds")
     ap2.add_argument("--th-clean", metavar="SEC", type=int, default=43200, help="cleanup interval; 0=disabled")
     ap2.add_argument("--th-maxage", metavar="SEC", type=int, default=604800, help="max folder age -- folders which haven't been poked for longer than \033[33m--th-poke\033[0m seconds will get deleted every \033[33m--th-clean\033[0m seconds")
+    ap2.add_argument("--th-pregen", metavar="F,F", type=u, default="", help="pregenerate thumbnails on startup; \033[33mF,F\033[0m is comma-separated list of formats; example: [\033[32mj,jf,w,w3,wf,wf3,x,xf\033[0m] NOTE: remember to set \033[33m--th-maxage 123456789\033[0m (volflag=th_pregen)")
+    ap2.add_argument("--th-pre-rl", metavar="SEC", type=int, default=30, help="while pregen is running, ratelimit the thumbnailer logger to one message every \033[33mSEC\033[0m seconds (only works with \033[33m-j1\033[0m); set 0 to disable ratelimit")
     ap2.add_argument("--th-covers", metavar="N,N", type=u, default="folder.png,folder.jpg,cover.png,cover.jpg", help="folder thumbnails to stat/look for; enabling \033[33m-e2d\033[0m will make these case-insensitive, and try them as dotfiles (.folder.jpg), and also automatically select thumbnails for all folders that contain pics, even if none match this pattern")
     ap2.add_argument("--th-spec-p", metavar="N", type=u, default=1, help="for music, do spectrograms or embedded coverart? [\033[32m0\033[0m]=only-art, [\033[32m1\033[0m]=prefer-art, [\033[32m2\033[0m]=only-spec")
     # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html
@@ -1875,6 +1880,7 @@ def add_ui(ap, retry: int):
     ap2.add_argument("--qdel", metavar="LVL", type=int, default=2, help="number of confirmations to show when deleting files (2/1/0)")
     ap2.add_argument("--dlni", action="store_true", help="force download (don't show inline) when files are clicked (volflag:dlni)")
     ap2.add_argument("--unlist", metavar="REGEX", type=u, default="", help="don't show files/folders matching \033[33mREGEX\033[0m in file list. WARNING: Purely cosmetic! Does not affect API calls, just the browser. Example: [\033[32m\\.(js|css)$\033[0m] (volflag=unlist)")
+    ap2.add_argument("--dothidden", action="store_true", help="hide specific files in a folder by listing them in a file named .hidden -- WARNING: Mostly cosmetic! Download-as-zip/tar will still download them. Do not rely on this for security (volflag=dothidden)")
     ap2.add_argument("--favico", metavar="TXT", type=u, default="c 000 none" if retry else "🎉 000 none", help="\033[33mfavicon-text\033[0m [ \033[33mforeground\033[0m [ \033[33mbackground\033[0m ] ], set blank to disable")
     ap2.add_argument("--ufavico", metavar="TXT", type=u, default="", help="URL to .ico/png/gif/svg file; \033[33m--favico\033[0m takes precedence unless disabled (volflag=ufavico)")
     ap2.add_argument("--ext-th", metavar="E=VP", type=u, action="append", help="\033[34mREPEATABLE:\033[0m use thumbnail-image \033[33mVP\033[0m for file-extension \033[33mE\033[0m, example: [\033[32mexe=/.res/exe.png\033[0m] (volflag=ext_th)")

@@ -705,18 +705,22 @@ class VFS(object):
         if rem:
             ap += "/" + rem
 
-        rap = absreal(ap)
+        rap = ""
         if self.shr_files:
             assert self.shr_src  # !rm
-            vn, rem = self.shr_src
-            chk = absreal(os.path.join(vn.realpath, rem))
-            if chk != rap:
-                # not the dir itself; assert file allowed
-                ad, fn = os.path.split(rap)
-                if chk != ad or fn not in self.shr_files:
-                    return "\n\n"
+            if rem and rem not in self.shr_files:
+                return "\n\n\0\n\n"
+            if resolve:
+                rap = absreal(ap)
+                vn, rem = self.shr_src
+                chk = absreal(os.path.join(vn.realpath, rem))
+                if chk != rap:
+                    # not the dir itself; assert file allowed
+                    ad, fn = os.path.split(rap)
+                    if chk != ad or fn not in self.shr_files:
+                        return "\n\n\0\n\n"
 
-        return rap if resolve else ap
+        return (rap or absreal(ap)) if resolve else ap
 
     def _dcanonical_shr(self, rem: str) -> str:
         """resolves until the final component (filename)"""
@@ -733,7 +737,7 @@ class VFS(object):
             if chk != absreal(ap):
                 # not the dir itself; assert file allowed
                 if ad != chk or fn not in self.shr_files:
-                    return "\n\n"
+                    return "\n\n\0\n\n"
 
         return os.path.join(ad, fn)
 
@@ -876,9 +880,6 @@ class VFS(object):
         yield dbv, vrem, rel, fsroot, rfiles, rdirs, vfs_virt
 
         for rdir, _ in rdirs:
-            if not dots_ok and rdir.startswith("."):
-                continue
-
             wrel = (rel + "/" + rdir).lstrip("/")
             wrem = (rem + "/" + rdir).lstrip("/")
             for x in self.walk(
@@ -1935,7 +1936,7 @@ class AuthSrv(object):
             vol.all_vps.sort(key=lambda x: len(x[0]), reverse=True)
             vol.root = vfs
 
-        zs = "du_iwho emb_all ls_q_m neversymlink"
+        zs = "du_iwho emb_all ls_q_m neversymlink oh_f oh_g"
         k_ign = set(zs.split())
         for vol in vfs.all_vols.values():
             unknown_flags = set()
@@ -1984,6 +1985,10 @@ class AuthSrv(object):
                     [sun] if "m" in s_pr else [],
                     [sun] if "d" in s_pr else [],
                     [sun] if "g" in s_pr else [],
+                    [],  # G
+                    [],  # h
+                    [],  # a
+                    [sun] if "." in s_pr or self.args.ed else [],
                 )
 
                 # don't know the abspath yet + wanna ensure the user

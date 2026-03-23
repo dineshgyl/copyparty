@@ -65,6 +65,7 @@ built in Norway 🇳🇴 with contributions from [not-norway](https://github.com
     * [searching](#searching) - search by size, date, path/name, mp3-tags, ...
 * [server config](#server-config) - using arguments or config files, or a mix of both
     * [version-checker](#version-checker) - sleep better at night
+    * [logging](#logging) - serverlog is sent to stdout by default
     * [zeroconf](#zeroconf) - announce enabled services on the LAN ([pic](https://user-images.githubusercontent.com/241032/215344737-0eae8d98-9496-4256-9aa8-cd2f6971810d.png))
         * [mdns](#mdns) - LAN domain-name and feature announcer
         * [ssdp](#ssdp) - windows-explorer announcer
@@ -86,6 +87,8 @@ built in Norway 🇳🇴 with contributions from [not-norway](https://github.com
     * [compress uploads](#compress-uploads) - files can be autocompressed on upload
     * [chmod and chown](#chmod-and-chown) - per-volume filesystem-permissions and ownership
     * [other flags](#other-flags)
+    * [descript.ion](#description) - add a description to each file in a folder
+    * [dothidden](#dothidden) - cosmetically hide specific files in a folder
     * [database location](#database-location) - in-volume (`.hist/up2k.db`, default) or somewhere else
     * [metadata from audio files](#metadata-from-audio-files) - set `-e2t` to index tags on upload
         * [metadata from xattrs](#metadata-from-xattrs) - unix extended file attributes
@@ -619,6 +622,8 @@ anyone can access these if they know the name, but they normally don't appear in
 
 a client can request to see dotfiles in directory listings if global option `-ed` is specified, or the volume has volflag `dots`, or the user has permission `.`
 
+> for [shares](#shares), the `dots` volflag is ignored
+
 dotfiles do not appear in search results unless one of the above is true, **and** the global option / volflag `dotsrch` is set
 
 > even if user has permission to see dotfiles, they are default-hidden unless `--see-dots` is set, and/or user has enabled the `dotfiles` option in the settings tab
@@ -766,6 +771,7 @@ to show `/icons/exe.png` and `/icons/elf.gif` as the thumbnail for all `.exe` an
 
 note:
 * heif/heifs/heic/heics images usually require the `libvips` [optional dependency](#optional-dependencies) but this is not possible with the docker-images due to [legal reasons](docs/bad-codecs.md)
+* if you do not want thumbnails to be generated on-the-fly, and instead wish to generate all of them on server startup, then see [thumbnail pregen](#thumbnail-pregen)
 
 config file example:
 
@@ -824,6 +830,7 @@ cool trick: download a folder by appending url-params `?tar&opus` or `?tar&mp3` 
 * and url-param `&nodot` skips dotfiles/dotfolders; they are included by default if your account has permission to see them
 * and url-params `&j` / `&w` produce jpeg/webm thumbnails/spectrograms instead of the original audio/video/images (`&p` for audio waveforms)
   * can also be used to pregenerate thumbnails; combine with `--th-maxage=9999999` or `--th-clean=0`
+    * but now there is also a real [thumbnail pregen](#thumbnail-pregen) so just use that
 
 
 ## uploading
@@ -1004,6 +1011,8 @@ specify `--shr /foobar` to enable this feature; a toplevel virtual folder named 
 * if you're using config files, put `shr: /foobar` inside the `[global]` section instead
 
 users can delete their own shares in the controlpanel, and a list of privileged users (`--shr-adm`) are allowed to see and/or delet any share on the server
+
+the volflag `--shr-who` lets you control who can create a share from that volume, either `no` (nobody), `a` (people with admin permission), or `auth` (people who are logged in) 
 
 after a share has expired, it remains visible in the controlpanel for `--shr-rt` minutes (default is 1 day), and the owner can revive it by extending the expiration time there
 
@@ -1336,6 +1345,33 @@ config file example:
   vc-url: https://api.copyparty.eu/advisories
   vc-age: 3  # how many hours to wait between each check
   vc-exit    # emergency-exit if current version is vulnerable
+```
+
+
+## logging
+
+serverlog is sent to stdout by default  (but logging to a file is also possible)
+
+"stdout" usually means either the terminal, or journalctl, or whatever is collecting logs from your docker containers, so that depends on your setup
+
+* [-q](https://copyparty.eu/cli/#g-q) disables logging to stdout, and may improve performance a little bit
+  * combine it with `-lo logfolder/cpp-%Y-%m-%d.txt` to log to a file instead
+  * the `%Y-%m-%d` makes it create a new logfile every day, with the date as filename
+* `-lo whatever.txt` can be used without `-q` to log to both at the same time
+  * by default, the logfile will have colors if the terminal does (usually the case)
+  * use the [textfile-viewer](https://github.com/user-attachments/assets/8a828947-2fae-4df9-bd2a-3de46f42d478) or `less -R` in a terminal to see colors correctly
+* if you want [no colors](https://youtu.be/biW5UVGkPMA?t=148):
+  * `--flo 2` disables colors for just the logfile
+  * `--no-ansi` disables colors for both the terminal and logfile
+
+config file example:
+
+```yaml
+[global]
+  log-date: %Y-%m-%d  # show dates on stdout too
+  lo: /var/log/cpp/%Y-%m-%d.txt  # logfile path
+  flo: 2  # just text (no colors) in logfile
+  q       # disable stdout; use logfile only
 ```
 
 
@@ -1845,6 +1881,55 @@ notes:
   * on windows grab this instead `python3 -m pip install --user -U python-magic-bin`
 * `cachectl` changes how webbrowser will cache responses (the `Cache-Control` response-header); default is `no-cache` which will prevent repeated downloading of the same file unless necessary (browser will ask copyparty if the file has changed)
   * adding `?cache` to a link will override this with "fully cache this for 69 seconds"; `?cache=321` is 321 seconds, and `?cache=i` is 7 days
+
+
+## descript.ion
+
+add a description to each file in a folder  by adding them to a textfile named `descript.ion`
+
+see https://copyparty.eu/beta/ for an example -- here's a basic `descript.ion` file:
+
+```
+bookmark.mp3 Taishi feat. Rita - Bookmark Memories
+slowstep.mp3 Taishi feat. 向日葵 - Slow Step -F.L.C.A-
+prsnlzr.mp3 Taishi feat. みとせのりこ - Personalizer
+cosmos.mp3 Taishi feat. Rita - Into the cosmos
+```
+
+
+## dothidden
+
+cosmetically hide specific files in a folder  by adding them to a textfile named `.hidden`
+
+this option is default-disabled; enable the volflag and/or global-option `dothidden`
+
+this is **cosmetic only!** the files are still easily accessible in many ways, for example with download-as-zip/tar, so **do not** rely on this for security.
+
+> also see the [--unlist](https://copyparty.eu/cli/#g-unlist) option which is somewhat similar -- `unlist` applies to the whole volume instead of just one folder; however, while dothidden also affects sftp and ftp, the `unlist` option is http/https-only
+
+
+## thumbnail pregen
+
+if you want to pre-generate everything on startup  (usually a bad idea);
+
+by default, thumbnails are created on-the-fly when a client needs it, and then cached on the server for [--th-maxage](https://copyparty.eu/cli/#g-th-maxage) seconds (default is one week), so most thumbnails only need to be created once, and are then eventually deleted from the cache to preserver disk space
+
+but if you need every thumbnail instantly available when a folder is viewed, then first increase the thumbnail expiration time to something really big, and then set global-option `th-pregen` and volflag `th_pregen` to a comma-separated list of thumbnail formats to automatically generate on server startup;
+
+the full list of all possible formats is: `j,jf,jf3,j3,w,wf,wf3,w3,x,xf,xf3,x3,opus,mp3,flac,wav` and I'll explain what those mean soon
+
+* `j` = jpeg cropped, `jf` = jpeg uncropped, `jf3` = jpeg uncropped triplesize, `j3` jpeg cropped triplesize
+* `w` = webm cropped, `wf` = webm uncropped, ..., `x` = jxl cropped, `xf` = jxl uncropped, ...
+* and yes, audio-transcodes are technically thumbnails according to copyparty -- don't think too much about it ( ﾟ ヮﾟ)
+  * unlike thumbnails, the expiry time for audio-transcodes is configured with [--ac-maxage](https://copyparty.eu/cli/#g-ac-maxage)
+
+anyways, obviously you **do not** want to pregenerate flac/wav because they're HUGE, and everything else also gets pretty big because it all adds up;
+
+* each regular thumbnail ( j, jf, w, wf, x, xf ) takes about 16 KiB of disk space
+* each triplesize thumb ( j3, jf3, w3, wf3, x3, xf3 ) takes about 96 KiB
+* each opus / mp3 audiotranscode takes... idk, 6 MiB? depends on song length
+
+so a thousand pictures converted to every possible regular-size image format (`j,jf,w,wf,x,xf`) takes **96 MiB,** and every possible 3x-size (`jf3,j3,wf3,w3,xf3,x3`) takes **562 MiB,** alternatively **658 MiB** in total for all, so that's why the default is to *not* pregenerate on startup, but instead do on-demand with a cache
 
 
 ## database location

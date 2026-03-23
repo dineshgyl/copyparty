@@ -337,6 +337,10 @@ class Up2k(object):
             if not self.stop:
                 self.log("uploads are now possible", 2)
 
+    def is_busy(self) -> tuple[bool, float]:
+        # returns ( currently-busy , have-finished-at-least-once )
+        return bool(self.pp), self.gt1
+
     def get_state(self, get_q: bool, uname: str) -> str:
         mtpq: Union[int, str] = 0
         ups = []

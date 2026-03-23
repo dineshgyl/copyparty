@@ -35,6 +35,7 @@ from .cert import ensure_cert
 from .fsutil import ramdisk_chk
 from .mtag import HAVE_FFMPEG, HAVE_FFPROBE, HAVE_MUTAGEN
 from .pwhash import HAVE_ARGON2
+from .sutil import close_pools as sutil_close_pools
 from .tcpsrv import TcpSrv
 from .th_srv import (
     H_PIL_AVIF,
@@ -171,6 +172,9 @@ class SvcHub(object):
             args.reflink = True
             args.dav_auth = True
             args.vague_403 = True
+            args.no_html = True
+            args.no_readme = True
+            args.no_logues = True
             args.nih = True
 
         if args.s:
@@ -196,7 +200,14 @@ class SvcHub(object):
         self.log_div = 10 ** (6 - args.log_tdec)
         self.log_efmt = "%02d:%02d:%02d.%0{}d".format(args.log_tdec)
         self.log_dfmt = "%04d-%04d-%06d.%0{}d".format(args.log_tdec)
-        self.log = self._log_disabled if args.q else self._log_enabled
+
+        if args.q:
+            self.log = self._log_disabled
+        elif args.lo and args.flo == 2 and not self.no_ansi:
+            self.log = self._log_en_f2
+        else:
+            self.log = self._log_enabled
+
         if args.lo:
             self._setup_logfile(printed)
 
@@ -252,6 +263,13 @@ class SvcHub(object):
         if args.s_rd_sz > args.iobuf:
             t = "WARNING: --s-rd-sz (%d) is larger than --iobuf (%d); this may lead to reduced performance"
             self.log("root", t % (args.s_rd_sz, args.iobuf), 3)
+
+        if args.vc_url:
+            zi = max(1, int(args.vc_age))
+            if zi < 3 and "api.copyparty.eu" in args.vc_url:
+                zi = 3
+                self.log("root", "vc-age too low for copyparty.eu; will use 3 hours")
+            args.vc_age = zi
 
         zs = ""
         if args.th_ram_max < 0.22:
@@ -478,6 +496,8 @@ class SvcHub(object):
         if args.ipr:
             for nm in args.ipr_u.values():
                 nm.mutex = threading.Lock()
+
+        self._reload_thumbsrv()
 
     def _db_onfail_ses(self) -> None:
         self.args.no_ses = True
@@ -1138,7 +1158,7 @@ class SvcHub(object):
             vsa = [x.upper() for x in vsa if x]
             setattr(al, k + "_set", set(vsa))
 
-        zs = "dav_ua1 sus_urls nonsus_urls ua_nodav ua_nodoc ua_nozip"
+        zs = "dav_ua1 lf_url sus_urls nonsus_urls ua_nodav ua_nodoc ua_nozip"
         for k in zs.split(" "):
             vs = getattr(al, k)
             if not vs or vs == "no":
@@ -1243,13 +1263,6 @@ class SvcHub(object):
             self.args.mv_re_r = float(zf2)
         except:
             raise Exception("invalid --mv-retry [%s]" % (self.args.mv_retry,))
-
-        if self.args.vc_url:
-            zi = max(1, int(self.args.vc_age))
-            if zi < 3 and "api.copyparty.eu" in self.args.vc_url:
-                zi = 3
-                self.log("root", "vc-age too low for copyparty.eu; will use 3 hours")
-            self.args.vc_age = zi
 
         al.js_utc = "false" if al.localtime else "true"
 
@@ -1468,7 +1481,16 @@ class SvcHub(object):
                 self.log("root", "reload done")
             t += "\n\nchanges to global options (if any) require a restart of copyparty to take effect"
             self.broker.reload()
+            self._reload_thumbsrv()
         return t
+
+    def _reload_thumbsrv(self) -> None:
+        if not self.thumbsrv:
+            return
+        vols = list(self.asrv.vfs.all_nodes.values())
+        if next((x for x in vols if x.flags.get("th_pregen", "")), None):
+            fun = getattr(self.broker, "say1", self.broker.say)
+            fun("httpsrv.pregen_thumbs")
 
     def _reload_sessions(self) -> None:
         with self.asrv.mutex:
@@ -1554,6 +1576,7 @@ class SvcHub(object):
 
             if self.thumbsrv:
                 self.thumbsrv.shutdown()
+                sutil_close_pools()
 
                 for n in range(200):  # 10s
                     time.sleep(0.05)
@@ -1714,6 +1737,69 @@ class SvcHub(object):
                 if not self.args.no_logflush:
                     self.logf.flush()
 
+    def _log_en_f2(self, src: str, msg: str, c: Union[int, str] = 0) -> None:
+        with self.log_mutex:
+            dt = datetime.now(self.tz)
+            if dt.day != self.cday or dt.month != self.cmon:
+                if self.args.log_date:
+                    zs = dt.strftime(self.args.log_date)
+                    self.log_efmt = "%s %s" % (zs, self.log_efmt.split(" ")[-1])
+                zs = "{}\n" if self.no_ansi else "\033[36m{}\033[0m\n"
+                zs = zs.format(dt.strftime("%Y-%m-%d"))
+                print(zs, end="")
+                self._set_next_day(dt)
+                if self.logf:
+                    self.logf.write(zs)
+
+            ts = self.log_efmt % (
+                dt.hour,
+                dt.minute,
+                dt.second,
+                dt.microsecond // self.log_div,
+            )
+
+            # logfile:
+            if not c:
+                fmt = "%s %-21s  LOG: %s\n"
+            elif c == 1:
+                fmt = "%s %-21s CRIT: %s\n"
+            elif c == 3:
+                fmt = "%s %-21s WARN: %s\n"
+            elif c == 6:
+                fmt = "%s %-21s  BTW: %s\n"
+            else:
+                fmt = "%s %-21s  LOG: %s\n"
+            fsrc = RE_ANSI.sub("", src) if "\033" in src else src
+            fmsg = RE_ANSI.sub("", msg) if "\033" in msg else msg
+            fmsg = fmt % (ts, fsrc, fmsg)
+
+            # stdout ansi:
+            fmt = "\033[36m%s \033[33m%-21s \033[0m%s\n"
+            if not c:
+                pass
+            elif isinstance(c, int):
+                msg = "\033[3%sm%s\033[0m" % (c, msg)
+            elif "\033" not in c:
+                msg = "\033[%sm%s\033[0m" % (c, msg)
+            else:
+                msg = "%s%s\033[0m" % (c, msg)
+
+            msg = fmt % (ts, src, msg)
+            try:
+                print(msg, end="")
+            except UnicodeEncodeError:
+                try:
+                    print(msg.encode("utf-8", "replace").decode(), end="")
+                except:
+                    print(msg.encode("ascii", "replace").decode(), end="")
+            except OSError as ex:
+                if ex.errno != errno.EPIPE:
+                    raise
+
+            self.logf.write(fmsg)
+            if not self.args.no_logflush:
+                self.logf.flush()
+
     def pr(self, *a: Any, **ka: Any) -> None:
         try:
             with self.log_mutex:
@@ -1871,3 +1957,7 @@ class SvcHub(object):
             except Exception as e:
                 t = "failed to process vulnerability advisory; %s"
                 self.log("ver-chk", t % (min_ex()), 1)
+                try:
+                    os.unlink(fpath)
+                except:
+                    pass

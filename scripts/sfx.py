@@ -5,6 +5,25 @@ import re, os, sys, time, shutil, signal, tarfile, hashlib, platform, tempfile, 
 import subprocess as sp
 
 
+# skip 1
+#
+# py2sfx (sfx.py) - bundle python-modules into an executable sfx.py
+# (c)2020, ed <oss@ocv.me>, MIT-licensed, originally from copyparty:
+# https://github.com/9001/copyparty/blob/hovudstraum/scripts/sfx.py
+#
+#  ( no need to include the remaining lines of this comment-block
+#     for attribution; the rest is just for context )
+#
+# to create an sfx, use this:
+# https://github.com/9001/copyparty/blob/hovudstraum/scripts/make-sfx.sh
+#
+# wanna steal this for your own project? then maybe
+# see the r0c version, since that's slightly simpler:
+# https://github.com/9001/r0c/blob/master/scripts/sfx.py
+#
+# skip 0
+
+
 """
 to edit this file, use HxD or "vim -b"
   (there is compressed stuff at the end)

@@ -1,4 +1,44 @@
 ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  
+# 2026-0308-2106  `v1.20.11`  what? nohtml is evolving!
+
+## ⚠️ ATTN: this release fixes a vulnerability
+
+[GHSA-m6hv-x64c-27mm](https://github.com/9001/copyparty/security/advisories/GHSA-m6hv-x64c-27mm) the `nohtml` volflag did not prevent javascript inside SVG images from executing -- a malicious user with write-access could upload an SVG file which would execute as javascript when someone opens it 1c9f894e
+
+## 🧪 new features
+
+* version-checker (thx @icxes!) c6965f06
+  * default-disabled; you must [choose a URL](https://github.com/9001/copyparty/#version-checker) to grab security advisories from to enable it
+  * periodically checks the security advisories and shows a warning in the controlpanel if you're running a vulnerable version
+  * can optionally panic and shutdown the server if you prefer that
+  * man, the timing on this though... absolute cinema
+
+## 🩹 bugfixes
+
+* fix `nohtml` not being aware that SVG images can execute javascript 1c9f894e
+  * a new volflag [noscript](https://github.com/9001/copyparty/#security) was also added; `nohtml` will automatically enable `noscript`, but `noscript` can also be useful on its own; see readme
+* various [upload rules](https://github.com/9001/copyparty/#upload-rules) fixes:
+  * #1335 `rotf` couldn't handle trailing slash (thx @NecRaul!) 8e20506d
+  * #1337 `rotn` didn't always count correctly (thx @NecRaul!) 23d4a62e
+  * `rotn` didn't apply to dupes 00e821db
+* combining [rp-loc](https://copyparty.eu/cli/#g-rp-loc) and [site](https://copyparty.eu/cli/#g-site) was a bit jank (thx @new-sashok724!) 31b23843
+* global-option [idp-store: 2](https://copyparty.eu/cli/#g-idp-store) would result in excessive config reloading 1272de9d
+* fix fd-leak when indexing certain compressed files, including epub books 8b5ac23e
+* [forget-ip](https://copyparty.eu/cli/#g-forget-ip): fix sqlite cursor-locking 37123e33
+
+## 🔧 other changes
+
+* #1316 Chinese translation got a huge makeover (thx @satgo1546 and @lxdlam!) b0152741
+* #1324 better rclone advice on the connect-page 8941701a
+* static website resources, previously served from `/.cpr/` have moved to `/.cpr/w/` for easier configuration of allowlists in reverseproxies and authentication middlewares 753ff548 
+
+## 🌠 fun facts
+
+* according to [the SVG spec](https://www.w3.org/TR/SVG11/script.html), images being able to execute javascript is a feature and intentional behavior... what a concept!
+
+
+
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  
 # 2026-0225-1533  `v1.20.10`  fix login (ﾉ ﾟヮﾟ)ﾉ ~┻━┻
 
 ## recent important news

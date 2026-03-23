@@ -42,6 +42,7 @@ from .util import (
     Daemon,
     ODict,
     exclude_dotfiles,
+    exclude_dothidden,
     min_ex,
     runhook,
     set_fperms,
@@ -318,7 +319,11 @@ class Tftpd(object):
         ls = virs + reals
 
         if "*" not in vn.axs.udot:
-            names = set(exclude_dotfiles([x[2] for x in ls]))
+            zsl = [x[2] for x in ls]
+            if "dothidden" in vn.flags and ".hidden" in zsl:
+                names = set(exclude_dothidden(zsl, fsroot))
+            else:
+                names = set(exclude_dotfiles(zsl))
             ls = [x for x in ls if x[2] in names]
 
         try:

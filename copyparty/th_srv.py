@@ -186,6 +186,10 @@ try:
     if os.environ.get("PRTY_NO_VIPS"):
         raise ImportError()
 
+    if "VIPS_CONCURRENCY" not in os.environ:
+        # reduces glibc RAM usage from 4.7 to 3.5 GiB ...yep, still bonkers
+        os.environ["VIPS_CONCURRENCY"] = "1"
+
     HAVE_VIPS = True
     import pyvips
 
@@ -256,6 +260,9 @@ class ThumbSrv(object):
         self.args = hub.args
         self.log_func = hub.log
 
+        self.log = self._log
+        self.nextlog = 0
+
         self.poke_cd = Cooldown(self.args.th_poke)
 
         self.mutex = threading.Lock()
@@ -268,6 +275,18 @@ class ThumbSrv(object):
         self.nthr = max(1, self.args.th_mt)
 
         self.exts_spec_unsafe = set(self.args.th_spec_cnv.split(","))
+
+        # libvips can easily gobble up 4 GiB of RAM when generating JXL thumbnails on glibc so let's not
+        self.vips_jxl = False
+        if HAVE_VIPS and self.args.th_vips_jxl == 2:
+            self.vips_jxl = True
+        elif HAVE_VIPS and self.args.th_vips_jxl == 1:
+            try:
+                with open("/proc/self/maps", "rb") as f:
+                    zb = f.read()
+                self.vips_jxl = b"/ld-musl-" in zb and b"mimalloc" not in zb
+            except:
+                pass
 
         self.q: Queue[Optional[tuple[str, str, str, VFS]]] = Queue(self.nthr * 4)
         for n in range(self.nthr):
@@ -327,6 +346,10 @@ class ThumbSrv(object):
                 self.fmt_pil.discard(f)
 
         self.thumbable: set[str] = set()
+        self._build_thumbable()
+
+    def _build_thumbable(self) -> None:
+        self.thumbable.clear()
 
         if "pil" in self.args.th_dec:
             self.thumbable |= self.fmt_pil
@@ -341,7 +364,14 @@ class ThumbSrv(object):
             for zss in [self.fmt_ffi, self.fmt_ffv, self.fmt_ffa]:
                 self.thumbable |= zss
 
-    def log(self, msg: str, c: Union[int, str] = 0) -> None:
+    def _log(self, msg: str, c: Union[int, str] = 0) -> None:
+        self.log_func("thumb", msg, c)
+
+    def _slog(self, msg: str, c: Union[int, str] = 0) -> None:
+        now = time.time()
+        if c in (0, 6) and now < self.nextlog:
+            return
+        self.nextlog = now + self.args.th_pre_rl
         self.log_func("thumb", msg, c)
 
     def shutdown(self) -> None:
@@ -416,6 +446,10 @@ class ThumbSrv(object):
             pass
 
         return None
+
+    def _rebuild_thumbable(self) -> None:
+        self._build_thumbable()
+        self.hub.broker.say("httpsrv.set_th_cfg", self.getcfg(), (self.args.th_no_jxl,))
 
     def getcfg(self) -> dict[str, set[str]]:
         return {
@@ -517,7 +551,11 @@ class ThumbSrv(object):
 
                     if lib == "pil" and ext in self.fmt_pil and tex in self.fmt_pil:
                         funs.append(self.conv_pil)
-                    elif lib == "vips" and ext in self.fmt_vips:
+                    elif (
+                        lib == "vips"
+                        and ext in self.fmt_vips
+                        and (tex != "jxl" or self.vips_jxl)
+                    ):
                         funs.append(self.conv_vips)
                     elif lib == "raw" and ext in self.fmt_raw:
                         funs.append(self.conv_raw)
@@ -807,7 +845,7 @@ class ThumbSrv(object):
                 b"-q:v",
                 unicode(vn.flags["th_qvx"]).encode("ascii"),  # default=??
                 b"-effort:v",
-                b"8",  # default=7, 1=fast, 9=max, 9~=8 but slower
+                b"7",  # default=7, 1=fast, 9=max, 9~=8 but slower
             ]
         else:
             cmd += [
@@ -833,6 +871,22 @@ class ThumbSrv(object):
             t = "thumbnail cannot be created due to legal reasons; https://github.com/9001/copyparty/blob/hovudstraum/docs/bad-codecs.md \033[0;90m\n"
             ret = 321
             c = 3
+
+        elif cmd[-1].lower().endswith(b".jxl") and (
+            "Error selecting an encoder" in serr
+            or "find a suitable output format" in serr
+            or "Automatic encoder selection failed" in serr
+            or "Default encoder for format webp" in serr
+            or "Unrecognized option 'effort:v" in serr
+            or "Please choose an encoder manually" in serr
+        ):
+            self.args.th_no_jxl = True
+            self.fmt_ffi.discard("jxl")
+            self.fmt_ffv.discard("jxl")
+            self._rebuild_thumbable()
+            t = "FFmpeg failed because it was compiled without jpegxl; enabling --th-no-jxl to force webp output:\n"
+            ret = 321
+            c = 1
 
         elif (
             (not self.args.th_ff_jpg or time.time() - int(self.args.th_ff_jpg) < 60)
