@@ -777,7 +777,7 @@ symbol legend,
 
 
 # briefly considered
-* [pydio](https://github.com/pydio/cells): python/agpl3, looks great, fantastic ux -- but needs mariadb, systemwide install
+* [pydio](https://github.com/pydio/cells): go/agpl3, looks great, fantastic ux -- but needs mariadb, systemwide install, SSO is 3280€/year
 * [gossa](https://github.com/pldubouilh/gossa): go/mit, minimalistic, basic file upload, text editor, mkdir and rename (no delete/move)
 
 
