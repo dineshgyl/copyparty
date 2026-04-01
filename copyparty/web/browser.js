@@ -1726,7 +1726,9 @@ function MPlayer() {
 			if (!tid || tid.indexOf('af-') !== 0)
 				continue;
 
-			order.push(tid.slice(1));
+			tid = tid.slice(1);
+			if (r.tracks[tid]) 
+				order.push(tid);
 		}
 		r.order = order;
 		r.shuffle();
