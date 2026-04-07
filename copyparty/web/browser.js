@@ -713,6 +713,54 @@ var L = Ls[lang] || Ls.eng, LANGS = [];
 for (var a = 0; a < LANGN.length; a++)
 	LANGS.push(LANGN[a][0]);
 
+if (window.glang && navigator.languages && !/\bcplng=/.test(document.cookie))
+	(function() {
+		var lmap = [
+			["eng", /^en/i],
+			["nor", /^n[ob]/i],
+			["chi", /^zh-cn/i],
+			["cze", /^cs/i],
+			["deu", /^de/i],
+			["epo", /^eo/i],
+			["fin", /^fi/i],
+			["fra", /^fr/i],
+			["grc", /^el/i],
+			["hun", /^hu/i],
+			["ita", /^it/i],
+			["jpn", /^ja/i],
+			["kor", /^ko/i],
+			["nld", /^nl/i],
+			["nno", /^nn/i],
+			["pol", /^pl/i],
+			["por", /^pt/i],
+			["rus", /^ru/i],
+			["spa", /^es/i],
+			["swe", /^sv/i],
+			["tur", /^tr/i],
+			["ukr", /^uk/i],
+			["vie", /^vi/i],
+		];
+		for (var a = 0; a < navigator.languages.length; a++) {
+			for (var b = 0; b < lmap.length; b++) {
+				var n = lmap[b][0];
+				if (!lmap[b][1].test(navigator.languages[a]) || !has(LANGS, n))
+					continue;
+
+				if (Ls[n]) {
+					lang = n;
+					L = Ls[n];
+					return;
+				}
+				if (window.stop)
+					window.stop();
+				document.body.innerHTML = 'Loading ' + n;
+				setck("cplng=" + n, location.reload.bind(location));
+				crashed = true;
+				throw 1;
+			}
+		}
+	})();
+
 
 function langtest() {
 	var n = LANGS.length - 1;

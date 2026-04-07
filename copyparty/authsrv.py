@@ -3273,7 +3273,7 @@ class AuthSrv(object):
             for zs in zs.split():
                 if vf.get(zs):
                     js_htm[zs] = 1
-            zs = "notooltips"
+            zs = "glang notooltips"
             for zs in zs.split():
                 if getattr(self.args, zs, False):
                     js_htm[zs] = 1
