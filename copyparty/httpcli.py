@@ -6375,6 +6375,7 @@ class HttpCli(object):
         
         gallery_items = []
         scanned_paths = set()  # Track already-scanned physical paths to avoid duplicates
+        scanned_folders = set()  # Track scanned folder realpaths to avoid duplicate subfolders
         
         # Iterate through all volumes the user has access to
         for vpath, vnode in self.asrv.vfs.all_vols.items():
@@ -6393,7 +6394,7 @@ class HttpCli(object):
             # Scan the volume for folders with media
             try:
                 self._scan_for_media_folders(
-                    vnode.realpath, vpath, vnode, media_exts, gallery_items
+                    vnode.realpath, vpath, vnode, media_exts, gallery_items, scanned_folders
                 )
             except Exception as e:
                 self.log("Error scanning %s: %s" % (vpath, str(e)), 3)
@@ -6405,10 +6406,19 @@ class HttpCli(object):
         self.reply(json_data.encode("utf-8"), mime="application/json")
         return True
     
-    def _scan_for_media_folders(self, realpath, vpath, vnode, media_exts, gallery_items, max_depth=5, current_depth=0):
+    def _scan_for_media_folders(self, realpath, vpath, vnode, media_exts, gallery_items, scanned_folders=None, max_depth=5, current_depth=0):
         """Recursively scan for folders containing media files"""
         if current_depth >= max_depth:
             return
+        
+        # Initialize scanned_folders set if not provided
+        if scanned_folders is None:
+            scanned_folders = set()
+        
+        # Skip if this folder has already been scanned (prevents duplicates from shadow volumes)
+        if realpath in scanned_folders:
+            return
+        scanned_folders.add(realpath)
         
         try:
             entries = bos.listdir(realpath)
@@ -6491,8 +6501,8 @@ class HttpCli(object):
         for subdir_path, subdir_name in subdirs:
             subdir_vpath = vpath + ('/' if vpath else '') + subdir_name
             self._scan_for_media_folders(
-                subdir_path, subdir_vpath, vnode, media_exts, 
-                gallery_items, max_depth, current_depth + 1
+                subdir_path, subdir_vpath, vnode, media_exts,
+                gallery_items, scanned_folders, max_depth, current_depth + 1
             )
 
 
