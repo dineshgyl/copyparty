@@ -6374,22 +6374,24 @@ class HttpCli(object):
         }
         
         gallery_items = []
-        scanned_paths = set()  # Track already-scanned physical paths to avoid duplicates
         scanned_folders = set()  # Track scanned folder realpaths to avoid duplicate subfolders
         
-        # Iterate through all volumes the user has access to
-        for vpath, vnode in self.asrv.vfs.all_vols.items():
-            if not vnode.realpath:
-                continue
+        # Use all_aps to identify primary volumes and skip shadow volumes
+        # all_aps groups volumes by realpath: [(realpath, [vnode1, vnode2, ...]), ...]
+        # For each realpath group, only process the first accessible volume
+        for realpath, vnodes in self.asrv.vfs.all_aps:
+            # Find first volume in this group that user has read access to
+            vnode = None
+            vpath = None
+            for vn in vnodes:
+                if vn.vpath in self.rvol:
+                    vnode = vn
+                    vpath = vn.vpath
+                    break
             
-            # Check if user has read access - use same logic as browser
-            if vpath not in self.rvol:
+            # Skip if no accessible volume found in this group
+            if not vnode or not vpath:
                 continue
-            
-            # Skip if we've already scanned this physical path (prevents duplicate shadow volumes)
-            if vnode.realpath in scanned_paths:
-                continue
-            scanned_paths.add(vnode.realpath)
             
             # Scan the volume for folders with media
             try:
