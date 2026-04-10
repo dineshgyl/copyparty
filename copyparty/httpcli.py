@@ -6374,6 +6374,7 @@ class HttpCli(object):
         }
         
         gallery_items = []
+        scanned_paths = set()  # Track already-scanned physical paths to avoid duplicates
         
         # Iterate through all volumes the user has access to
         for vpath, vnode in self.asrv.vfs.all_vols.items():
@@ -6383,6 +6384,11 @@ class HttpCli(object):
             # Check if user has read access - use same logic as browser
             if vpath not in self.rvol:
                 continue
+            
+            # Skip if we've already scanned this physical path (prevents duplicate shadow volumes)
+            if vnode.realpath in scanned_paths:
+                continue
+            scanned_paths.add(vnode.realpath)
             
             # Scan the volume for folders with media
             try:
