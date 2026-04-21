@@ -21,6 +21,7 @@ from .util import (
     VF_CAREFUL,
     Netdev,
     atomic_move,
+    chkcmd,
     get_adapters,
     min_ex,
     sunpack,
