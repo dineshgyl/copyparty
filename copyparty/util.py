@@ -1501,8 +1501,7 @@ class Garda(object):
             return 0, ip
 
         if ":" in ip:
-            # assume /64 clients; drop 4 groups
-            ip = IPv6Address(ip).exploded[:-20]
+            ip = ipnorm(ip)
 
         if prev and self.uniq:
             if self.prev.get(ip) == prev:
@@ -1561,6 +1560,43 @@ def dedent(txt: str) -> str:
         if zs and pad > pad2:
             pad = pad2
     return "\n".join([ln[pad:] for ln in lns])
+
+
+def expand_osenv_noop(txt) -> str:
+    return txt
+
+
+def _expand_osenv_c(txt) -> str:
+    if "${" not in txt:
+        return txt
+    zsl = txt.split("${")
+    ret = zsl[0]
+    for v in zsl[1:]:
+        if "}" not in v:
+            raise Exception("missing '}' after %r in config-value %r" % (v, txt))
+        a, b = v.split("}", 1)
+        try:
+            ret += os.environ[a] + b
+        except:
+            raise Exception("env-var %r not defined; config-value %r" % (a, txt))
+    return ret
+
+
+if os.environ.get("PRTY_NO_ENVEXPAND"):
+    expand_osenv_c = expand_osenv_noop
+    expand_osenv_s = expand_osenv_noop
+else:
+    expand_osenv_c = _expand_osenv_c
+    expand_osenv_s = os.path.expandvars
+
+
+def expand_osenv_cs(txt) -> str:
+    a = expand_osenv_c(txt)
+    b = expand_osenv_s(txt)
+    if a == b:
+        return a
+    t = "config-value %r is using the old syntax for environment-variables; choose one of the following options:\noption 1: update the config-value to the new syntax, ${VAR} instead of $VAR or %%VAR%%\noption 2: tell copyparty to allow the old syntax with global-option --env-expand 1 (risky)\noption 3: tell copyparty to only use the new syntax (and not expand this variable) with global-option --env-expand 2\noption 4: disable all environment-variable expansions with PRTY_NO_ENVEXPAND=1 or global-option --env-expand 0"
+    raise Exception(t % (txt,))
 
 
 def rice_tid() -> str:
@@ -2445,8 +2481,8 @@ def odfusion(
 
 def ipnorm(ip: str) -> str:
     if ":" in ip:
-        # assume /64 clients; drop 4 groups
-        return IPv6Address(ip).exploded[:-20]
+        # assume /56 clients; drop final 72 bits
+        return str(IPv6Network(ip + "/56", strict=False).network_address)
 
     return ip
 
@@ -3848,7 +3884,7 @@ def _parsehook(
 
     argv = cmd.split(",") if "," in cmd else [cmd]
 
-    argv[0] = os.path.expandvars(os.path.expanduser(argv[0]))
+    argv[0] = os.path.expanduser(expand_osenv_c(argv[0]))
 
     return areq, chk, imp, fork, sin, jtxt, wait, sp_ka, argv
 
@@ -4191,7 +4227,7 @@ def loadpy(ap: str, hot: bool) -> Any:
     depending on what other inconveniently named files happen
     to be in the same folder
     """
-    ap = os.path.expandvars(os.path.expanduser(ap))
+    ap = os.path.expanduser(expand_osenv_c(ap))
     mdir, mfile = os.path.split(absreal(ap))
     mname = mfile.rsplit(".", 1)[0]
     sys.path.insert(0, mdir)

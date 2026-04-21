@@ -2,7 +2,7 @@
 
 var J_BRW = 1;
 
-if (window.rw_edit === undefined)
+if (window.dgauto === undefined)
 	alert('FATAL ERROR: receiving stale data from the server; this may be due to a broken reverse-proxy (stuck cache). Try restarting copyparty and press CTRL-SHIFT-R in the browser');
 
 var XHR = XMLHttpRequest;
@@ -228,6 +228,7 @@ if (1)
 		"cl_hpick": "tap on column headers to hide in the table below",
 		"cl_hcancel": "column hiding aborted",
 		"cl_rcm": "right-click menu",
+		"cl_gauto": "autogrid",
 
 		"ct_grid": '田 the grid',
 		"ct_ttips": '◔ ◡ ◔">ℹ️ tooltips',
@@ -282,6 +283,8 @@ if (1)
 		"tt_dynt": "autogrow as tree expands",
 		"tt_wrap": "word wrap",
 		"tt_hover": "reveal overflowing lines on hover$N( breaks scrolling unless mouse $N&nbsp; cursor is in the left gutter )",
+		"tt_gauto": "display as grid or list depending on folder contents",
+		"tt_gathr": "use grid if this percentage of files are pics/vids",
 
 		"ml_pmode": "at end of folder...",
 		"ml_btns": "cmds",
@@ -769,7 +772,9 @@ function langtest() {
 }
 function langtest2() {
 for (var a = 0; a < LANGS.length; a++) {
+	if (!Ls[LANGS[a]]) continue;
 	for (var b = a + 1; b < LANGS.length; b++) {
+		if (!Ls[LANGS[b]]) continue;
 		var i1 = Object.keys(Ls[LANGS[a]]).length > Object.keys(Ls[LANGS[b]]).length ? a : b,
 			i2 = i1 == a ? b : a,
 			t1 = Ls[LANGS[i1]],
@@ -783,6 +788,7 @@ for (var a = 0; a < LANGS.length; a++) {
 	}
 }
 }
+langtest2();
 
 
 
@@ -982,6 +988,13 @@ ebi('op_cfg').innerHTML = (
 	'		<a id="ireadme" class="tgl btn" href="#" tt="' + L.ct_readme + '</a>\n' +
 	'		<a id="idxh" class="tgl btn" href="#" tt="' + L.ct_idxh + '</a>\n' +
 	'		<a id="sbars" class="tgl btn" href="#" tt="' + L.ct_sbars + '</a>\n' +
+	'	</div>\n' +
+	'</div>\n' +
+	'<div>\n' +
+	'	<h3>' + L.cl_gauto + '</h3>\n' +
+	'	<div>\n' +
+	'		<a id="gauto" class="tgl btn" href="#" tt="' + L.tt_gauto + '">' + L.enable + '</a>\n' +
+	'		<input type="text" id="ga_thresh" value="" ' + NOAC + ' style="width:1.5em" tt="' + L.tt_gathr + '" />' +
 	'	</div>\n' +
 	'</div>\n' +
 	'<div>\n' +
@@ -1210,9 +1223,7 @@ onresize100.add(read_sbw, true);
 
 
 function check_image_support(format, uri) {
-	var cached
-	    = window['have_' + format]
-	    = sread('have_' + format);
+	var cached = window['have_' + format] = sread('have_' + format);
 	if (cached !== null)
 		return;
 
@@ -1693,7 +1704,7 @@ mpl.init_ac2();
 var re_m3u = /\.(m3u8?)$/i;
 var re_au_native = (can_ogg || have_acode) ? /\.(aac|flac|m4[abr]|mp3|oga|ogg|opus|wav)$/i : /\.(aac|flac|m4[abr]|mp3|wav)$/i,
 	re_au_vid = /\.(3gp|asf|avi|flv|m4v|mkv|mov|mp4|mpeg|mpeg2|mpegts|mpg|mpg2|nut|ogm|ogv|rm|ts|vob|webm|wmv)$/i,
-	re_au_all = /\.(aac|ac3|aif|aiff|alac|alaw|amr|ape|au|dfpwm|dts|flac|gsm|it|itgz|itxz|itz|m4[abr]|mdgz|mdxz|mdz|mo3|mod|mp2|mp3|mpc|mptm|mt2|mulaw|oga|ogg|okt|opus|ra|s3m|s3gz|s3xz|s3z|tak|tta|ulaw|wav|wma|wv|xm|xmgz|xmxz|xmz|xpk|3gp|asf|avi|flv|m4v|mkv|mov|mp4|mpeg|mpeg2|mpegts|mpg|mpg2|nut|ogm|ogv|rm|ts|vob|webm|wmv)$/i;
+	re_au_all = /\.(aac|ac3|aif|aiff|alac|alaw|amr|ape|au|b[cfr]stm|dfpwm|dts|flac|gsm|it|itgz|itxz|itz|m4[abr]|mdgz|mdxz|mdz|mo3|mod|mp2|mp3|mpc|mptm|mt2|mulaw|oga|ogg|okt|opus|ra|s3m|s3gz|s3xz|s3z|tak|tta|ulaw|wav|wma|wv|xm|xmgz|xmxz|xmz|xpk|3gp|asf|avi|flv|m4v|mkv|mov|mp4|mpeg|mpeg2|mpegts|mpg|mpg2|nut|ogm|ogv|rm|ts|vob|webm|wmv)$/i;
 
 
 // extract songs + add play column
@@ -5405,8 +5416,8 @@ var showfile = (function () {
 			Prism.highlightElement(el);
 		}
 		catch (ex) { }
-        btn.setAttribute('download', ebi('docname').innerHTML);
-        btn.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(jt));
+		btn.setAttribute('download', ebi('docname').innerHTML);
+		btn.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(jt));
 	};
 
 	r.mktree = function () {
@@ -5614,6 +5625,16 @@ var thegrid = (function () {
 			r.setvis();
 	};
 
+	r.autogrid = function (res) {
+		var ni = 0;
+		var nf = res.files.length;
+		for (var a = 0; a < nf; a++)
+			if (img_re.test('.' + res.files[a].ext))
+				ni++;
+		if (nf)
+			thegrid.en = 100 * ni / nf >= r.gathr;
+	};
+
 	function setln(v) {
 		if (v) {
 			r.ln += v;
@@ -5726,8 +5747,10 @@ var thegrid = (function () {
 		var ths = QSA('#ggrid>a');
 
 		for (var a = 0, aa = ths.length; a < aa; a++) {
-			var tr = ebi(ths[a].getAttribute('ref')).closest('tr'),
-				cl = tr.className || '';
+			var ref = ths[a].getAttribute('ref');
+			if (!ref)
+				continue;
+			var cl = ebi(ref).closest('tr').className || '';
 
 			if (noq_href(ths[a]).endsWith('/'))
 				cl += ' dir';
@@ -5836,7 +5859,7 @@ var thegrid = (function () {
 				ihref = addq(ihref, 'th=' + (
 					have_jxl  ? 'x' :
 					have_webp ? 'w' :
-					            'j'
+					'j'
 				));
 				if (!r.crop)
 					ihref += 'f';
@@ -6001,6 +6024,17 @@ var thegrid = (function () {
 		pbar.onresize();
 		vbar.onresize();
 	});
+	bcfg_bind(r, 'gaen', 'gauto', !!dgauto, function(v) {
+		if (r.en && sread("griden") != 1) {
+			r.en = false;
+			r.setvis(true);
+		}
+	});
+	ebi('ga_thresh').value = r.gathr = icfg_get('ga_thresh', dgauto || 70);
+	ebi('ga_thresh').oninput = function (e) {
+		var n = parseInt(this.value);
+		swrite('ga_thresh', r.gathr = (isNum(n) ? n : 0) || 70);
+	};
 	ebi('wtgrid').onclick = ebi('griden').onclick;
 
 	return r;
@@ -6244,6 +6278,9 @@ var ahotkeys = function (e) {
 		if (thegrid.en)
 			return ebi('griden').click();
 	}
+
+	if (aet == 'input')
+		return;
 
 	var in_ftab = (aet == 'tr' || aet == 'td') && ae.closest('#files');
 	if (in_ftab) {
@@ -7712,6 +7749,9 @@ var treectl = (function () {
 				}
 			}
 		}
+
+		if (thegrid.gaen && sread('griden') != 1)
+			thegrid.autogrid(res);
 
 		if (url) setTimeout(asdf, 1); else asdf();
 	}
@@ -9683,7 +9723,7 @@ var rcm = (function () {
 			var row = mknod('tr', 'rcm_tmp',
 				'<td>-new-</td><td colspan="' + (QSA("#files thead th").length - 1) + '"><input id="tempname" class="i" type="text" placeholder="' + (is_dir ? 'Folder' : 'File') + ' Name"></td>');
 			QS("#files tbody").appendChild(row);
-	    }
+		}
 		else {
 			var row = mknod('a', 'rcm_tmp',
 				'<span class="dir" style="align-self:end"><input id="tempname" class="dir" type="text" placeholder="' + (is_dir ? 'Folder' : 'File') + ' Name"></span>');
