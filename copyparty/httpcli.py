@@ -5838,6 +5838,7 @@ class HttpCli(object):
             excl, target = (target.split("/", 1) + [""])[:2]
             sub = self.gen_tree("/".join([top, excl]).strip("/"), target, dk)
             ret["k" + quotep(excl)] = sub
+            dk = ""
 
         vfs = self.asrv.vfs
         dk_sz = False
@@ -5877,16 +5878,16 @@ class HttpCli(object):
             else:
                 dirs = exclude_dotfiles(dirs)
 
-        dirs = [quotep(x) for x in dirs if x != excl]
-
         if dk_sz and fsroot:
             kdirs = []
             fsroot_ = os.path.join(fsroot, "")
-            for dn in dirs:
+            for dn in [x for x in dirs if x != excl]:
                 ap = fsroot_ + dn
                 zs = self.gen_fk(2, self.args.dk_salt, ap, 0, 0)[:dk_sz]
-                kdirs.append(dn + "?k=" + zs)
+                kdirs.append(quotep(dn) + "?k=" + zs)
             dirs = kdirs
+        else:
+            dirs = [quotep(x) for x in dirs if x != excl]
 
         if vfs_virt:
             for x in vfs_virt:
