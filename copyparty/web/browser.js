@@ -3767,7 +3767,7 @@ function sortfiles(nodes) {
 					if ((v + '').indexOf('<a ') === 0)
 						v = v.split('>')[1];
 					else if (name == "href" && v)
-						v = uricom_dec(v);
+						v = uri2txt(v, true);
 
 					nodes[b]._sv = v
 				}
@@ -7880,7 +7880,7 @@ var treectl = (function () {
 		delete res['a'];
 		var keys = Object.keys(res);
 		for (var a = 0; a < keys.length; a++)
-			keys[a] = [uricom_dec(keys[a]), keys[a]];
+			keys[a] = [uri2txt(keys[a]), keys[a]];
 
 		if (ENATSORT)
 			keys.sort(function (a, b) { return NATSORT.compare(a[0], b[0]); });
@@ -8990,6 +8990,13 @@ var msel = (function () {
 		if (this.vp !== get_evpath()) {
 			sf.textContent = 'aborted due to location change';
 			return;
+		}
+
+		if (this.status == 405) {
+			tb.value = '';
+			sf.textContent = 'already existed';
+			treectl.goto(this.vp + uricom_enc(this.dn) + '/', true);
+			return tree_scrollto();
 		}
 
 		xhrchk(this, L.fd_xe1, L.fd_xe2);
