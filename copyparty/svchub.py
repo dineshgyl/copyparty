@@ -233,9 +233,10 @@ class SvcHub(object):
 
         self.lo1 = self.lo2 = ""
         if args.lo:
-            if "%" in args.lo and "%R" not in args.lo:
+            if "%R" not in args.lo:
                 args.lo += "%R"
-            if not args.rlo:
+            if args.rlo in ("", "no"):
+                args.rlo = ""
                 args.lo = args.lo.replace("%R", "")
             try:
                 self.lo1, self.lo2 = args.lo.split("%R")
@@ -475,6 +476,8 @@ class SvcHub(object):
             }
 
         args.th_poke = min(args.th_poke, args.th_maxage, args.ac_maxage)
+        if not args.th_clean:
+            args.th_poke = 0
 
         zms = ""
         if not args.https_only:
@@ -1188,6 +1191,17 @@ class SvcHub(object):
         al.th_covers_set = set(al.th_covers)
         al.th_coversd_set = set(al.th_coversd)
 
+        zs = al.use_bwrap.strip().lower()
+        if zs == "a":
+            if not HAVE_BWRAP:
+                al.th_bwrap = ""
+        elif zs == "n":
+            al.th_bwrap = ""
+        elif zs == "f":
+            al.th_bwrap = al.th_bwrap or "bwrap-not-available"
+        else:
+            raise Exception("--use-bwrap must be a/n/f")
+
         for k in "c".split(" "):
             if self.args.env_expand in (0, 2):
                 break
@@ -1222,7 +1236,7 @@ class SvcHub(object):
 
         zs = "th_bwrap"
         for k in zs.split(" "):
-            zsl = [x for x in str(getattr(al, k)).split(" ") if x]
+            zsl = [x for x in str(getattr(al, k, "")).split(" ") if x]
             zbl = [x.encode("ascii", "replace") for x in zsl]
             setattr(al, k + "_s", zsl)
             setattr(al, k + "_b", zbl)

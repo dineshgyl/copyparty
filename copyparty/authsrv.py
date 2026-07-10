@@ -443,6 +443,7 @@ class VFS(object):
         self.adot: dict[str, list[str]] = {}
         self.js_ls = {}
         self.js_htm = ""
+        self.md_htm = ""
         self.all_vols: dict[str, VFS] = {}  # flattened recursive
         self.all_nodes: dict[str, VFS] = {}  # also jumpvols/shares
         self.all_fvols: dict[str, VFS] = {}  # volumes which are files
@@ -1194,7 +1195,7 @@ class AuthSrv(object):
         for ptn, sigil in ((PTN_U_ANY, "${u}"), (PTN_G_ANY, "${g}")):
             if bool(ptn.search(src)) != bool(ptn.search(dst)):
                 zsl.append(sigil)
-        if zsl:
+        if zsl and src != "//NULL":
             t = "ERROR: if %s is mentioned in a volume definition, it must be included in both the filesystem-path [%s] and the volume-url [/%s]"
             t = "\n".join([t % (x, src, dst) for x in zsl])
             self.log(t, 1)
@@ -1274,8 +1275,16 @@ class AuthSrv(object):
         daxs: dict[str, AXS],
         mflags: dict[str, dict[str, Any]],
     ) -> tuple[str, str]:
-        src = os.path.expanduser(self.args.shenvexp(src))
-        src = absreal(src)
+        if src == "//NULL":
+            src = ""
+        else:
+            src = os.path.expanduser(self.args.shenvexp(src))
+            src = absreal(src)
+
+        if dst == "//NULL":
+            t = "//NULL given as URL instead of filesystem-path"
+            self.log(t, 1)
+            raise Exception(t)
         dst = dst.strip("/")
 
         if dst in mount:
@@ -1283,7 +1292,7 @@ class AuthSrv(object):
             self.log(t.format(dst, mount[dst][0], src), c=1)
             raise Exception(BAD_CFG)
 
-        if src in mount.values():
+        if src and src in mount.values():
             t = "filesystem-path [{}] mounted in multiple locations:"
             t = t.format(src)
             for v in [k for k, v in mount.items() if v[0] == src] + [dst]:
@@ -1292,7 +1301,7 @@ class AuthSrv(object):
             self.log(t, c=3)
             raise Exception(BAD_CFG)
 
-        if not bos.path.exists(src):
+        if src and not bos.path.exists(src):
             self.log("warning: filesystem-path did not exist: %r" % (src,), 3)
 
         vf = {}
@@ -1860,7 +1869,7 @@ class AuthSrv(object):
         if WINDOWS:
             cased = {}
             for vp, (ap, vp0) in mount.items():
-                cased[vp] = (absreal(ap), vp0)
+                cased[vp] = (absreal(ap) if ap else "", vp0)
 
             mount = cased
 
@@ -2463,7 +2472,7 @@ class AuthSrv(object):
                 if vf not in vol.flags:
                     vol.flags[vf] = getattr(self.args, ga)
 
-            zs = "forget_ip gid nrand tail_who th_qv th_qvx th_spec_p u2abort u2ow uid unp_who ups_who zip_who"
+            zs = "forget_ip gid md_nhist nrand tail_who th_qv th_qvx th_spec_p u2abort u2ow uid unp_who ups_who zip_who"
             for k in zs.split():
                 if k in vol.flags:
                     vol.flags[k] = int(vol.flags[k])
@@ -2616,6 +2625,8 @@ class AuthSrv(object):
             zsl4 = list(set([x.lower() for x in zsl2]))
             emb_all.update(zsl3)
             emb_all.update(zsl4)
+            if "no_readme" in vol.flags:
+                zsl1 = zsl2 = zsl3 = zsl4 = []
             vol.flags["emb_mds"] = [[0, zsl1, zsl3], [1, zsl2, zsl4]]
 
             zsl1 = [x for x in vol.flags["prologues"].split(",") if x]
@@ -2624,6 +2635,8 @@ class AuthSrv(object):
             zsl4 = list(set([x.lower() for x in zsl2]))
             emb_all.update(zsl3)
             emb_all.update(zsl4)
+            if "no_logues" in vol.flags:
+                zsl1 = zsl2 = zsl3 = zsl4 = []
             vol.flags["emb_lgs"] = [[0, zsl1, zsl3], [1, zsl2, zsl4]]
 
             zs = str(vol.flags.get("html_head") or "")
@@ -2640,17 +2653,22 @@ class AuthSrv(object):
             if head_s and not head_s.endswith("\n"):
                 head_s += "\n"
 
+            zs = vol.flags.get("csp_ui", "")
+            csp_ui = "Content-Security-Policy: %s\r\n" % (zs,) if zs else ""
+            zs = vol.flags.get("csp_dl", "")
+            csp_dl = "Content-Security-Policy: %s\r\n" % (zs,) if zs else ""
+
             zs = "X-Content-Type-Options: nosniff\r\n"
             if "norobots" in vol.flags:
                 head_s += META_NOBOTS
                 zs += "X-Robots-Tag: noindex, nofollow\r\n"
             if self.args.http_vary:
                 zs += "Vary: %s\r\n" % (self.args.http_vary,)
-            vol.flags["oh_g"] = zs + "\r\n"
+            vol.flags["oh_g"] = zs + csp_ui + "\r\n"
 
             if "noscript" in vol.flags:
-                zs += "Content-Security-Policy: script-src 'none';\r\n"
-            vol.flags["oh_f"] = zs + "\r\n"
+                csp_dl = "Content-Security-Policy: script-src 'none';\r\n"
+            vol.flags["oh_f"] = zs + csp_dl + "\r\n"
 
             ico_url = vol.flags.get("ufavico")
             if ico_url:
@@ -2795,6 +2813,34 @@ class AuthSrv(object):
             up_q = [UP_MTE_MAP[x] for x in up_m]
             zs = "select %s from up where rd=? and fn=?" % (", ".join(up_q),)
             vol.flags["ls_q_m"] = (zs if up_m else "", up_m)
+
+        zltss = []  # recheck
+        for vn1 in vfs.all_nodes.values():
+            if "show_hist" in vn1.flags or not vn1.realpath:
+                continue
+            ap = vn1.realpath.replace(os.sep, "/")
+            apS = ap.rstrip("/") + "/"
+            for vn2 in vfs.all_nodes.values():
+                if not vn2.realpath:
+                    continue
+                haps = [
+                    vn2.histpath.replace(os.sep, "/"),
+                    vn2.dbpath.replace(os.sep, "/"),
+                ]
+                for hap in list(set(haps)):
+                    if not hap.startswith(apS):
+                        continue
+                    zs = hap[len(apS) :]
+                    if "/" in zs:
+                        zltss.append((vjoin(vn1.vpath, zs), hap))
+                    else:
+                        vn1.add("", zs, zs)
+        for vp, hap in zltss:
+            zss = vfs.get(vp, "", False, False)[0].axs.uget
+            if zss:
+                t = "note: /%s gives access to %r for %s"
+                self.log(t % (vp, hap, zss), 3)
+        zltss[:] = []
 
         vfs.all_fvols = {
             zs: vol for zs, vol in vfs.all_vols.items() if "is_file" in vol.flags
@@ -3193,7 +3239,7 @@ class AuthSrv(object):
             db.close()
 
         self.js_ls = {}
-        self.js_htm = {}
+        self.js_htm = ""
         for vp, vn in self.vfs.all_nodes.items():
             if enshare and vp.startswith(shrs):
                 continue  # propagates later in this func
@@ -3285,7 +3331,13 @@ class AuthSrv(object):
                 zs2 = getattr(self.args, zs, "")
                 if zs2:
                     js_htm[zs] = zs2
+
+            zs = "have_emp md_no_br"
+            md_htm = {x: js_htm[x] for x in zs.split(" ")}
+            md_htm["modpoll_freq"] = self.args.mcr
+
             vn.js_htm = json_hesc(json.dumps(js_htm))
+            vn.md_htm = json_hesc(json.dumps(md_htm))
 
         vols = list(vfs.all_nodes.values())
         if enshare:

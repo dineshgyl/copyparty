@@ -579,7 +579,7 @@ if (1)
 		"u_https1": "you should",
 		"u_https2": "switch to https",
 		"u_https3": "for better performance",
-		"u_ancient": 'your browser is impressively ancient -- maybe you should <a href="#" onclick="goto(\'bup\')">use bup instead</a>',
+		"u_ancient": 'your browser is impressively ancient -- maybe you should <a href="#" id="u2nah">use bup instead</a>',
 		"u_nowork": "need firefox 53+ or chrome 57+ or iOS 11+",
 		"tail_2old": "need firefox 105+ or chrome 71+ or iOS 14.5+",
 		"u_nodrop": 'your browser is too old for drag-and-drop uploading',
@@ -866,7 +866,7 @@ ebi('widget').innerHTML = (
 
 // up2k ui
 ebi('op_up2k').innerHTML = (
-	'<form id="u2form" method="post" enctype="multipart/form-data" onsubmit="return false;"></form>\n' +
+	'<form id="u2form" method="post" enctype="multipart/form-data"></form>\n' +
 
 	'<table id="u2conf">\n' +
 	'	<tr>\n' +
@@ -945,6 +945,9 @@ ebi('op_up2k').innerHTML = (
 	'<div id="u2life"></div>' +
 	'<div id="u2foot"></div>'
 );
+ebi('u2form').onsubmit = function () {
+	return false;
+};
 
 
 ebi('wrap').insertBefore(mknod('div', 'lazy'), ebi('epi'));
@@ -1205,6 +1208,8 @@ function goto(dest) {
 	if (treectl)
 		treectl.onscroll();
 }
+function go2bup() { goto('bup'); }
+function go2up2k() { goto('up2k'); }
 
 
 var m = SPINNER.split(','),
@@ -4080,7 +4085,7 @@ var fileman = (function () {
 			'<tr><td>perms</td><td class="sh_axs">',
 		];
 		for (var a = 0; a < perms.length; a++)
-			if (!has(['admin', 'move', 'delete'], perms[a]))
+			if (!has(['admin', 'move', 'delete', 'upget'], perms[a]))
 				html.push('<a href="#" class="tgl btn">' + perms[a] + '</a>');
 
 		if (has(perms, 'write'))
@@ -4540,8 +4545,9 @@ var fileman = (function () {
 			}
 
 			var msg = esc(L.fr_busy.format(f.length, f[0].ofn));
-			msg += '\n<a id="fs_abrt" class="btn" href="#" onclick="fs_abrt()">' + L.fs_abrt + '</a>';
+			msg += '\n<a id="fs_abrt" class="btn" href="#">' + L.fs_abrt + '</a>';
 			toast.show('inf r', 0, msg);
+			ebi('fs_abrt').onclick = fs_abrt;
 			var dst = base + uricom_enc(f[0].inew.value, false);
 
 			function rename_cb() {
@@ -4868,8 +4874,9 @@ var fileman = (function () {
 				return paster();
 
 			var msg = esc((r.ccp ? L.fcp_busy : L.fp_busy).format(f.length + 1, uricom_dec(t.src)));
-			msg += '\n<a id="fs_abrt" class="btn" href="#" onclick="fs_abrt()">' + L.fs_abrt + '</a>';
+			msg += '\n<a id="fs_abrt" class="btn" href="#">' + L.fs_abrt + '</a>';
 			toast.show('inf r', 0, msg);
+			ebi('fs_abrt').onclick = fs_abrt;
 
 			var xhr = new XHR(),
 				act = r.ccp ? '?copy=' : '?move=',
@@ -5892,10 +5899,15 @@ var thegrid = (function () {
 
 			html.push('<a href="' + ohref + '" ref="' + ref +
 				'"' + ac + ' ttt="' + esc(name) + '"><img style="height:' +
-				(r.sz / 1.25) + 'em" loading="lazy" onload="th_onload(this)" src="' +
+				(r.sz / 1.25) + 'em" loading="lazy" fetchPriority="low" src="' +
 				ihref + '" /><span' + ac + '>' + ao.innerHTML + '</span></a>');
 		}
 		ggrid.innerHTML = html.join('\n');
+
+		var ths = QSA('#ggrid>a>img');
+		for (var a = 0, aa = ths.length; a < aa; a++)
+			ths[a].onload = th_onload;
+
 		clmod(ggrid, 'crop', r.crop);
 		clmod(ggrid, 'nocrop', !r.crop);
 
@@ -5906,7 +5918,7 @@ var thegrid = (function () {
 		if (srch && r.sel)
 			gsel.click();
 
-		var ths = QSA('#ggrid>a');
+		ths = QSA('#ggrid>a');
 		for (var a = 0, aa = ths.length; a < aa; a++) {
 			ths[a].ondblclick = gclick2;
 			ths[a].onclick = gclick1;
@@ -5941,7 +5953,11 @@ var thegrid = (function () {
 			},
 			onChange: function (i, maxIdx) {
 				if (this[i].imageElement) {
-					sethash('g' + this[i].imageElement.getAttribute('ref') + getsort());
+					var h = 'g' + this[i].imageElement.getAttribute('ref');
+					if (this[i].page)
+						h += ',p' + this[i].page;
+					h += getsort();
+					sethash(h);
 				}
 			}
 		});
@@ -6047,8 +6063,8 @@ var thegrid = (function () {
 })();
 
 
-function th_onload(el) {
-	el.style.height = '';
+function th_onload() {
+	this.style.height = '';
 }
 
 
@@ -9125,7 +9141,7 @@ var sandboxjs = (function () {
 	var ret = '',
 		busy = false,
 		url = SR + '/.cpr/w/util.js?_=' + TS,
-		tag = '<script src="' + url + '"></script>';
+		tag = '<script nonce="' + JS_NONCE + '" src="' + url + '"></script>';
 
 	return function () {
 		if (ret || busy)
@@ -9135,7 +9151,7 @@ var sandboxjs = (function () {
 		xhr.open('GET', url, true);
 		xhr.onload = function () {
 			if (this.status == 200)
-				ret = '<script>' + this.responseText + '</script>';
+				ret = '<script nonce="' + JS_NONCE + '">' + this.responseText + '</script>';
 		};
 		xhr.send();
 		busy = true;
@@ -9283,8 +9299,9 @@ function sandbox(tgt, rules, allow, cls, html) {
 	html = '<html class="iframe ' + document.documentElement.className +
 		'"><head><style>html{background:#eee;color:#000}</style><style>' + globalcss() +
 		'</style><base target="_parent"></head><body id="b" class="logue ' + cls + '">' + html +
-		'<script>' + env + '</script>' + sandboxjs() +
-		'<script>var d=document.documentElement,TS="' + TS + '",' +
+		'<script nonce="' + JS_NONCE + '">' + env + '</script>' + sandboxjs() +
+		'<script nonce="' + JS_NONCE + '">' +
+		'var d=document.documentElement,TS="' + TS + '",' +
 		'loc=new URL("' + location.href.split('?')[0] + '");' +
 		'function say(m){window.parent.postMessage(m,"*")};' +
 		'setTimeout(function(){var its=0,pih=-1,f=function(){' +

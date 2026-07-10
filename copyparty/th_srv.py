@@ -18,7 +18,16 @@ from queue import Queue
 from .__init__ import ANYWIN, PY2, TYPE_CHECKING, unicode
 from .authsrv import VFS
 from .bos import bos
-from .mtag import HAVE_FFMPEG, HAVE_FFPROBE, au_unpk, bwrap, ffprobe, have_ff
+from .mtag import (
+    HAVE_FFMPEG,
+    HAVE_FFPROBE,
+    TH_BWRAP,
+    au_unpk,
+    bwrap,
+    bwrap_fail,
+    ffprobe,
+    have_ff,
+)
 from .util import BytesIO  # type: ignore
 from .util import (
     FFMPEG_URL,
@@ -264,7 +273,7 @@ class ThumbSrv(object):
         self.log = self._log
         self.nextlog = 0
 
-        self.poke_cd = Cooldown(self.args.th_poke)
+        self.poke_cd = Cooldown(self.args.th_poke) if self.args.th_poke else None
 
         self.mutex = threading.Lock()
         self.busy: dict[str, list[threading.Condition]] = {}
@@ -906,6 +915,9 @@ class ThumbSrv(object):
         if not ret:
             return
 
+        if TH_BWRAP:
+            bwrap_fail(serr)
+
         c: Union[str, int] = "90"
         t = "FFmpeg failed (probably a corrupt file):\n"
 
@@ -1407,7 +1419,7 @@ class ThumbSrv(object):
         return ret
 
     def poke(self, tdir: str) -> None:
-        if not self.poke_cd.poke(tdir):
+        if not self.poke_cd or not self.poke_cd.poke(tdir):
             return
 
         ts = int(time.time())
