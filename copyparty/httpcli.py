@@ -1,5 +1,5 @@
 # coding: utf-8
-from __future__ import print_function, unicode_literals
+from __future__ import division, print_function, unicode_literals
 
 import argparse  # typechk
 import copy
@@ -1676,14 +1676,18 @@ class HttpCli(object):
 
                 uo_kw["context"] = ctx
 
-            url = self.args.wopi_url.rstrip("/") + "/hosting/discovery"
+            wopi_urls = dict(x.lower().split("=", 1) for x in self.args.wopi_urls or [])
+            url = wopi_urls.get(self.host.lower(), self.args.wopi_url).rstrip("/")
+            url += "/hosting/discovery"
             buf = urlopen(url, **uo_kw).read()
             xml = buf.decode("ascii", "replace").lower()
             enc = self.get_xml_enc(xml)
             xml = buf.decode(enc, "replace")
             xroot = parse_xml(xml)
             ext = vpath.split(".")[-1]
-            url = xroot.find(".//action[@ext='%s'][@urlsrc]" % (ext,)).get("urlsrc")
+            url = xroot.find(
+                ".//action[@ext='%s'][@name='edit'][@urlsrc]" % (ext,)
+            ).get("urlsrc")
             if not url.endswith(("?", "&")):
                 url += "&" if "?" in url else "?"
             url += "WOPISrc="
@@ -3742,7 +3746,7 @@ class HttpCli(object):
     def _mkdir(self, vpath: str, dav: bool = False) -> bool:
         nullwrite = self.args.nw
         self.gctx = vpath
-        vpath = undot(vpath)
+        vpath = sanitize_vpath(undot(vpath))
         vfs, rem = self.asrv.vfs.get(vpath, self.uname, False, True)
         if "nosub" in vfs.flags:
             raise Pebkac(403, "mkdir is forbidden below this folder")
@@ -7603,20 +7607,18 @@ class HttpCli(object):
         dirs = []
         files = []
         ptn_hr = RE_HR
-        use_abs_url = is_opds or (
-            vpath and not is_ls and not is_js and not self.trailing_slash
-        )
+
+        base = ""
+        if is_opds or (vpath and not (is_ls or is_js or self.trailing_slash)):
+            if is_opds:
+                base = self.args.SRS
+                if vpath:
+                    base += vpath + "/"
+            else:
+                base = "/" + vpath + "/"
+
         for fn in ls_names:
-            base = ""
-            href = fn
-            if use_abs_url:
-                if is_opds:
-                    base = self.args.SRS
-                    if vpath:
-                        base += vpath + "/"
-                else:
-                    base = "/" + vpath + "/"
-                href = base + fn
+            href = base + fn
 
             if fn in vfs_virt:
                 fspath = vfs_virt[fn].realpath
@@ -7786,6 +7788,26 @@ class HttpCli(object):
                         (fe["sz"], fe["tags"][".files"]) = hit
                     except:
                         pass  # 404 or mojibake
+                if vfs_virt:
+                    q = "select sz, nf from ds where rd='' limit 1"
+                    try:
+                        for fe in [x for x in dirs if x["name"] in vfs_virt]:
+                            if ".files" not in fe["tags"]:
+                                fe["tags"][".files"] = 0
+                            vols = [vn.nodes[fe["name"]]]
+                            while vols:
+                                vn2 = vols.pop()
+                                if self.uname not in vn2.axs.uread:
+                                    continue
+                                vols += list(vn2.nodes.values())
+                                if vn2.dbv not in (vn2, None):
+                                    continue
+                                hit = idx.get_cur(vn2).execute(q).fetchone()
+                                if hit:
+                                    fe["sz"] += hit[0]
+                                    fe["tags"][".files"] += hit[1]
+                    except:
+                        pass
 
             taglist = [k for k in lmte if k in tagset]
         else:

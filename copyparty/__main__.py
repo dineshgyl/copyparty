@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # coding: utf-8
-from __future__ import print_function, unicode_literals
+from __future__ import division, print_function, unicode_literals
 
 """copyparty: http file sharing hub (py2/py3)"""
 __author__ = "ed <copyparty@ocv.me>"
@@ -1042,7 +1042,12 @@ def get_sects():
             .1   = when necessary, append a dot followed by a single digit
             .1!  = counter is always added, even when not necessary
             -3   = a hyphen followed by three-digit counter
-            no   = disable counter; overwrite existing logfile
+            no   = disable counter; append to existing file
+            del  = delete existing logfile and create new
+            over = overwrite existing logfile
+
+            append is not possible for .xz-compressed logfiles;
+            if logfile is *.xz and rlo is no then rlo will be .1
             """
             ),
         ],
@@ -1329,7 +1334,7 @@ def add_upload(ap):
     ap2.add_argument("--nrand", metavar="NUM", type=int, default=9, help="randomized filenames length (volflag=nrand)")
     ap2.add_argument("--magic", action="store_true", help="enable filetype detection on nameless uploads (volflag=magic)")
     ap2.add_argument("--df", metavar="GiB", type=u, default="0", help="ensure \033[33mGiB\033[0m free disk space by rejecting upload requests; assumes gigabytes unless a unit suffix is given: [\033[32m256m\033[0m], [\033[32m4\033[0m], [\033[32m2T\033[0m] (volflag=df)")
-    ap2.add_argument("--sparse", metavar="MiB", type=int, default=4, help="windows-only: minimum size of incoming uploads through up2k before they are made into sparse files")
+    ap2.add_argument("--sparse", metavar="MiB", type=int, default=1, help="windows-only: minimum size of incoming uploads through up2k before they are made into sparse files")
     ap2.add_argument("--turbo", metavar="LVL", type=int, default=0, help="configure turbo-mode in up2k client; [\033[32m-1\033[0m] = forbidden/always-off, [\033[32m0\033[0m] = default-off and warn if enabled, [\033[32m1\033[0m] = default-off, [\033[32m2\033[0m] = on, [\033[32m3\033[0m] = on and disable datecheck")
     ap2.add_argument("--nosubtle", metavar="N", type=int, default=0, help="when to use a wasm-hasher instead of the browser's builtin; faster on chrome, but buggy in older chrome versions. [\033[32m0\033[0m] = only when necessary (non-https), [\033[32m1\033[0m] = always (all browsers), [\033[32m2\033[0m] = always on chrome/firefox, [\033[32m3\033[0m] = always on chrome, [\033[32mN\033[0m] = chrome-version N and newer (recommendation: 137)")
     ap2.add_argument("--u2j", metavar="JOBS", type=int, default=2, help="web-client: number of file chunks to upload in parallel; 1 or 2 is good when latency is low (same-country), 2~4 for android-clients, 2~6 for cross-atlantic. Max is 6 in most browsers. Big values increase network-speed but may reduce HDD-speed")
@@ -1427,7 +1432,7 @@ def add_auth(ap):
     ap2.add_argument("--no-bauth", action="store_true", help="disable basic-authentication support; do not accept passwords from the 'Authenticate' header at all. NOTE: This breaks support for the android app")
     ap2.add_argument("--bauth-last", action="store_true", help="keeps basic-authentication enabled, but only as a last-resort; if a cookie is also provided then the cookie wins")
     ap2.add_argument("--ses-db", metavar="PATH", type=u, default=ses_db, help="where to store the sessions database (if you run multiple copyparty instances, make sure they use different DBs)")
-    ap2.add_argument("--ses-len", metavar="CHARS", type=int, default=20, help="session key length; default is 120 bits ((20//4)*4*6)")
+    ap2.add_argument("--ses-len", metavar="CHARS", type=int, default=24, help="session key length; default is 144 bits ((24//4)*4*6)")
     ap2.add_argument("--no-ses", action="store_true", help="disable sessions; use plaintext passwords in cookies")
     ap2.add_argument("--grp-all", metavar="NAME", type=u, default="acct", help="the name of the auto-generated group which contains every username which is known")
     ap2.add_argument("--ipu", metavar="CIDR=USR", type=u, action="append", help="\033[34mREPEATABLE:\033[0m users with IP matching \033[33mCIDR\033[0m are auto-authenticated as username \033[33mUSR\033[0m; example: [\033[32m172.16.24.0/24=dave]")
@@ -1582,6 +1587,7 @@ def add_wopi(ap):
     ap2.add_argument("--wopi", action="store_true", help="enable integration with office suites using WOPI")
     ap2.add_argument("--wopi-api", metavar="URL", type=u, default="", help="URL that the WOPI-client should use to communicate with copyparty; default is same as user's webbrowser. Example: [\033[32mhttps://party.example.com/\033[0m]")
     ap2.add_argument("--wopi-url", metavar="URL", type=u, default="", help="URL to your WOPI client; the host of e.g. Collabora Online. Example: [\033[32mhttps://code.example.com/\033[0m]")
+    ap2.add_argument("--wopi-urls", metavar="HOST=URL", type=u, action="append", help="\033[34mREPEATABLE:\033[0m maps http \033[33mHOST\033[0m copyparty being accessed by to specific WOPI client instance \033[33mURL\033[0m; falls back to \033[33m--wopi-url\033[0m; examples: [\033[32mparty.public.com=https://office.public.com/\033[0m], [\033[32mparty.internal.net:8443=https://office.internal.net:8443/\033[0m]")
     ap2.add_argument("--wopi-crt", metavar="TXT", type=u, default="", help="if \033[33m--wopi-url\033[0m is selfsigned: path to ca.pem or cert.pem to expect/verify (can be [\033[32mno\033[0m] for full-yolo)")
     ap2.add_argument("--wopi-crt-icn", action="store_true", help="if \033[33m--wopi-url\033[0m is selfsigned: ignore the CN (server ip/name) in cert")
     ap2.add_argument("--wopi-ttl", metavar="SEC", type=int, default=1800, help="session lifetime; allow editing for this many seconds (default is 30 min)")
@@ -1722,6 +1728,8 @@ def add_safety(ap):
     ap2.add_argument("--loris", metavar="B", type=int, default=60, help="if a client maxes out the server connection limit without sending headers, ban it for \033[33mB\033[0m minutes; disable with [\033[32m0\033[0m]")
     ap2.add_argument("--acao", metavar="V[,V]", type=u, default="*", help="Access-Control-Allow-Origin; list of origins (domains/IPs without port) to accept requests from; [\033[32mhttps://1.2.3.4\033[0m]. Default [\033[32m*\033[0m] allows requests from all sites but removes cookies and http-auth; only ?pw=hunter2 survives")
     ap2.add_argument("--acam", metavar="V[,V]", type=u, default="GET,HEAD", help="Access-Control-Allow-Methods; list of methods to accept from offsite ('*' behaves like \033[33m--acao\033[0m's description)")
+    if FULL_HELP or ANYWIN:
+        ap2.add_argument("--unsafe-tools", action="store_true", help="windows-only: allow running programs (ffmpeg, dcraw_emu, ...) when their location is inside a folder that can be uploaded to (dangerous due to DLL-hijacking)")
     if FULL_HELP or (not ANYWIN and not UNIX):
         ap2.add_argument("--th-bwrap", metavar="CMD", type=u, default=th_bwrap, help="optional bwrap sandbox command for FFmpeg and dcraw (Linux-only)")
         ap2.add_argument("--use-bwrap", metavar="TXT", type=u, default="n", help="a/n/f; [\033[32ma\033[0m]=auto (yes if the program 'bwrap' exists (assumes it works)), [\033[32mn\033[0m]=no (assumes bwrap is broken), [\033[32mf\033[0m]=force (disables FFmpeg if bwrap unavailable)")
@@ -1755,7 +1763,7 @@ def add_logging(ap):
     ap2.add_argument("-q", action="store_true", help="quiet; disable most STDOUT messages")
     ap2.add_argument("-lo", metavar="PATH", type=u, default="", help="logfile; use .txt for plaintext or .xz for compressed. Example: \033[32mcpp-%%Y-%%m%%d-%%H%%M%%S.txt.xz\033[0m (NB: some errors may appear on STDOUT only)")
     ap2.add_argument("--flo", metavar="N", type=int, default=1, help="log format for \033[33m-lo\033[0m; [\033[32m1\033[0m]=classic/colors, [\033[32m2\033[0m]=no-color")
-    ap2.add_argument("--rlo", metavar="TXT", type=u, default=".1", help="logrotate counter format; see \033[33m--help-rlo\033[0m")
+    ap2.add_argument("--rlo", metavar="TXT", type=u, default="no", help="logrotate counter format; see \033[33m--help-rlo\033[0m")
     ap2.add_argument("--logrot-sig", metavar="S", type=u, default="", help="immediately logrotate when unix-signal \033[33mS\033[0m is received; examples: [\033[32mSIGHUP\033[0m], [\033[32mHUP\033[0m], [\033[32m1\033[0m]")
     ap2.add_argument("--no-ansi", action="store_true", default=not VT100, help="disable colors; same as environment-variable NO_COLOR")
     ap2.add_argument("--ansi", action="store_true", help="force colors; overrides environment-variable NO_COLOR")
@@ -1825,14 +1833,14 @@ def add_thumbnail(ap):
     # https://github.com/libvips/libvips
     # https://stackoverflow.com/a/47612661
     # ffmpeg -hide_banner -demuxers | awk '/^ D  /{print$2}' | while IFS= read -r x; do ffmpeg -hide_banner -h demuxer=$x; done | grep -E '^Demuxer |extensions:'
-    ap2.add_argument("--th-r-pil", metavar="T,T", type=u, default="avif,avifs,blp,bmp,cbz,dcx,dds,dib,emf,eps,epub,fits,flc,fli,fpx,gif,heic,heics,heif,heifs,icns,ico,im,j2p,j2k,jp2,jpeg,jpg,jpx,jxl,pbm,pcx,pgm,png,pnm,ppm,psd,qoi,sgi,spi,tga,tif,tiff,webp,wmf,xbm,xpm", help="image formats to decode using pillow")
+    ap2.add_argument("--th-r-pil", metavar="T,T", type=u, default="avif,avifs,blp,bmp,cbz,dcx,dds,dib,emf,eps,epub,fits,flc,fli,fpx,gif,heic,heics,heif,heifs,icns,ico,im,j2p,j2k,jp2,jpeg,jpg,jpx,jxl,kra,ora,pbm,pcx,pgm,png,pnm,ppm,psd,qoi,sgi,spi,tga,tif,tiff,webp,wmf,xbm,xpm", help="image formats to decode using pillow")
     ap2.add_argument("--th-r-vips", metavar="T,T", type=u, default="3fr,arw,avif,cr2,cr3,crw,dcr,dng,erf,exr,fit,fits,fts,gif,hdr,heic,heics,heif,heifs,jp2,jpeg,jpg,jpx,jxl,k25,kdc,mdc,mef,mrw,nef,nii,nrw,orf,pfm,pgm,png,ppm,raf,raw,rw2,sr2,srf,srw,svg,tif,tiff,webp,x3f", help="image formats to decode using pyvips")
     ap2.add_argument("--th-r-raw", metavar="T,T", type=u, default="3fr,arw,cr2,cr3,crw,dcr,dng,erf,k25,kdc,mdc,mef,mos,mrw,nef,nrw,orf,pef,raf,raw,rw2,sr2,srf,srw,x3f", help="image formats to decode using rawpy (if available) or libraw's dcraw_emu")
-    ap2.add_argument("--th-r-ffi", metavar="T,T", type=u, default="apng,avif,avifs,bmp,cbz,dds,dib,epub,fit,fits,fts,gif,hdr,heic,heics,heif,heifs,icns,ico,jp2,jpeg,jpg,jpx,jxl,pbm,pcx,pfm,pgm,png,pnm,ppm,psd,qoi,sgi,tga,tif,tiff,webp,xbm,xpm", help="image formats to decode using ffmpeg")
+    ap2.add_argument("--th-r-ffi", metavar="T,T", type=u, default="apng,avif,avifs,bmp,cbz,dds,dib,epub,fit,fits,fts,gif,hdr,heic,heics,heif,heifs,icns,ico,jp2,jpeg,jpg,jpx,jxl,kra,ora,pbm,pcx,pfm,pgm,png,pnm,ppm,psd,qoi,sgi,tga,tif,tiff,webp,xbm,xpm", help="image formats to decode using ffmpeg")
     ap2.add_argument("--th-r-ffv", metavar="T,T", type=u, default="3gp,asf,av1,avc,avi,flv,h264,h265,hevc,m4v,mjpeg,mjpg,mkv,mov,mp4,mpeg,mpeg2,mpegts,mpg,mpg2,mts,nut,ogm,ogv,rm,ts,vob,webm,wmv", help="video formats to decode using ffmpeg")
     ap2.add_argument("--th-r-ffa", metavar="T,T", type=u, default="aac,ac3,aif,aiff,alac,alaw,amr,apac,ape,au,bcstm,bfstm,brstm,bonk,dfpwm,dts,flac,gsm,ilbc,it,itgz,itxz,itz,m4a,m4b,m4r,mdgz,mdxz,mdz,mka,mo3,mod,mp2,mp3,mpc,mptm,mt2,mulaw,oga,ogg,okt,opus,ra,s3m,s3gz,s3xz,s3z,tak,tta,ulaw,wav,wma,wv,xm,xmgz,xmxz,xmz,xpk", help="audio formats to decode using ffmpeg")
     ap2.add_argument("--th-spec-cnv", metavar="T", type=u, default="it,itgz,itxz,itz,mdgz,mdxz,mdz,mo3,mod,s3m,s3gz,s3xz,s3z,xm,xmgz,xmxz,xmz,xpk", help="audio formats which provoke https://trac.ffmpeg.org/ticket/10797 (huge ram usage for s3xmodit spectrograms)")
-    ap2.add_argument("--au-unpk", metavar="E=F.C", type=u, default="mdz=mod.zip, mdgz=mod.gz, mdxz=mod.xz, s3z=s3m.zip, s3gz=s3m.gz, s3xz=s3m.xz, xmz=xm.zip, xmgz=xm.gz, xmxz=xm.xz, itz=it.zip, itgz=it.gz, itxz=it.xz, cbz=jpg.cbz, epub=jpg.epub", help="audio/image formats to decompress before passing to ffmpeg")
+    ap2.add_argument("--au-unpk", metavar="E=F.C", type=u, default="mdz=mod.zip, mdgz=mod.gz, mdxz=mod.xz, s3z=s3m.zip, s3gz=s3m.gz, s3xz=s3m.xz, xmz=xm.zip, xmgz=xm.gz, xmxz=xm.xz, itz=it.zip, itgz=it.gz, itxz=it.xz, cbz=jpg.cbz, epub=jpg.epub, kra=png.kra, ora=png.ora", help="audio/image formats to decompress before passing to ffmpeg")
 
 
 def add_transcoding(ap):

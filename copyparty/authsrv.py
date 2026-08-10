@@ -1,5 +1,5 @@
 # coding: utf-8
-from __future__ import print_function, unicode_literals
+from __future__ import division, print_function, unicode_literals
 
 import argparse
 import base64
@@ -2660,10 +2660,11 @@ class AuthSrv(object):
             if head_s and not head_s.endswith("\n"):
                 head_s += "\n"
 
+            zs2 = "Content-Security-Policy: %s\r\n"
             zs = vol.flags.get("csp_ui", "")
-            csp_ui = "Content-Security-Policy: %s\r\n" % (zs,) if zs else ""
+            csp_ui = zs2 % (zs,) if zs.lower() not in ("", "no") else ""
             zs = vol.flags.get("csp_dl", "")
-            csp_dl = "Content-Security-Policy: %s\r\n" % (zs,) if zs else ""
+            csp_dl = zs2 % (zs,) if zs.lower() not in ("", "no") else ""
 
             zs = "X-Content-Type-Options: nosniff\r\n"
             if "norobots" in vol.flags:
@@ -2761,7 +2762,8 @@ class AuthSrv(object):
 
                 for k in drop:
                     t = 'cannot enable [%s] for volume "/%s" because this requires one of the following: e2d / e2ds / e2dsa  (either as volflag or global-option)'
-                    self.log(t % (k, vol.vpath), 1)
+                    if not (enshare and vp.startswith(shrs)):
+                        self.log(t % (k, vol.vpath), 1)
                     vol.flags.pop(k)
 
             zi = vol.flags.get("lifetime") or 0
@@ -2870,12 +2872,13 @@ class AuthSrv(object):
                 continue
             try:
                 bos.makedirs(vol.realpath, vf=vol.flags)
-                files = os.listdir(vol.realpath)
-                for fn in files:
+                for fn, _ in statdir(
+                    self.log_func, not self.args.no_scandir, False, vol.realpath, True
+                ):
                     fn2 = fn.lower()
                     if fn == fn2:
                         fn2 = fn.upper()
-                    if fn == fn2 or fn2 in files:
+                    if fn == fn2:
                         continue
                     is_ci = os.path.exists(os.path.join(vol.realpath, fn2))
                     ccs = "y" if is_ci else "n"
@@ -3058,6 +3061,8 @@ class AuthSrv(object):
             zv, _ = vfs.get("", "*", False, True, err=999)
             if self.warn_anonwrite and verbosity > 4 and os.getcwd() == zv.realpath:
                 t = "anyone can write to the current directory: {}\n"
+                if ANYWIN:
+                    t += "/!\\ NOTE: because you are using Windows, this is kinda dangerous (DLL-hijacking); you should configure accounts and volumes if this is accessible from an untrusted network\n"
                 self.log(t.format(zv.realpath), c=1)
 
             self.warn_anonwrite = False
