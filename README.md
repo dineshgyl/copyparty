@@ -219,6 +219,8 @@ other places to download copyparty from  (non-github links):
   * https://copyparty.eu/enz = https://copyparty.eu/copyparty-en.pyz = the enterprise pyz
   * https://copyparty.eu/cli = online cli helptext
 
+DO NOT download from [sourceforge](https://copyparty.eu/unsanctioned/sourceforge.txt)
+
 
 ### at home
 
@@ -526,6 +528,7 @@ upgrade notes
 per-folder, per-user permissions  - if your setup is getting complex, consider making a [config file](./docs/example.conf) instead of using arguments
 * much easier to manage, and you can modify the config at runtime with `systemctl reload copyparty` or more conveniently using the `[reload cfg]` button in the control-panel (if the user has `a`/admin in any volume)
   * changes to the `[global]` config section requires a restart to take effect
+* when using config-files, ignore all the `-a` and `-v` stuff below, and CTRL-F `config file example` on this page instead
 
 a quick summary can be seen using [`--help-accounts`](https://copyparty.eu/cli/#accounts-help-page)
 
@@ -574,6 +577,8 @@ anyone trying to bruteforce a password gets banned according to `--ban-pw`; defa
 and if you want to use config files instead of commandline args (good!) then here's the same examples as a configfile; save it as `foobar.conf` and use it like this: `python copyparty-sfx.py -c foobar.conf`
 
 * you can also `PRTY_CONFIG=foobar.conf python copyparty-sfx.py` (convenient in docker etc)
+
+config file example:
 
 ```yaml
 [accounts]
@@ -2195,7 +2200,7 @@ as for client-side stuff, there is [plugins for modifying UI/UX](./contrib/plugi
 
 autologin based on IP range (CIDR)  , using the global-option `--ipu`
 
-for example, if everyone with an IP that starts with `192.168.123` should automatically log in as the user `spartacus`, then you can either specify `--ipu=192.168.123.0/24=spartacus` as a commandline option, or put this in a config file:
+for example, if everyone with an IP that starts with `192.168.123` should automatically log in as the user `spartacus`, then you can either specify `--ipu=192.168.123.0/24=spartacus` as a commandline option, same as this config file example:
 
 ```yaml
 [global]
@@ -2211,7 +2216,7 @@ repeat the option to map additional subnets
 
 limit a user to certain IP ranges (CIDR)  , using the global-option `--ipr`
 
-for example, if the user `spartacus` should get rejected if they're not connecting from an IP that starts with `192.168.123` or `172.16`, then you can either specify `--ipr=192.168.123.0/24,172.16.0.0/16=spartacus` as a commandline option, or put this in a config file:
+for example, if the user `spartacus` should get rejected if they're not connecting from an IP that starts with `192.168.123` or `172.16`, then you can either specify `--ipr=192.168.123.0/24,172.16.0.0/16=spartacus` as a commandline option, same as this config file example:
 
 ```yaml
 [global]
@@ -2248,7 +2253,7 @@ but if you just want to let users change their own passwords, then you probably 
 
 other ways to auth by header
 
-if you have a middleware which adds a header with a user identifier, for example tailscale's `Tailscale-User-Login: alice.m@forest.net` then you can automatically auth as `alice` by defining that mapping with `--idp-hm-usr '^Tailscale-User-Login^alice.m@forest.net^alice'` or the following config file:
+if you have a middleware which adds a header with a user identifier, for example tailscale's `Tailscale-User-Login: alice.m@forest.net` then you can automatically auth as `alice` by defining that mapping with `--idp-hm-usr '^Tailscale-User-Login^alice.m@forest.net^alice'` or the following config file example:
 
 ```yaml
 [global]
@@ -2569,7 +2574,7 @@ change the association of a file extension
 
 using commandline args, you can do something like `--mime gif=image/jif` and `--mime ts=text/x.typescript` (can be specified multiple times)
 
-in a config file, this is the same as:
+that's the same as this config file example:
 
 ```yaml
 [global]
@@ -2636,7 +2641,7 @@ if your distro/OS is not mentioned below, there might be some hints in the [«on
 
 `pacman -S copyparty` (in [arch linux extra](https://archlinux.org/packages/extra/any/copyparty/))
 
-it comes with a [systemd service](./contrib/systemd/copyparty@.service) as well as a [user service](./contrib/systemd/copyparty-user.service), and expects to find a [config file](./contrib/systemd/copyparty.example.conf) in `/etc/copyparty/copyparty.conf` or `~/.config/copyparty/copyparty.conf`
+it comes with a [systemd service](./contrib/systemd/copyparty@.service) as well as a [user service](./contrib/systemd/copyparty-user.service), and expects to find a [config file](./contrib/systemd/copyparty.example.conf) in `/etc/copyparty.conf` or `~/.config/copyparty/copyparty.conf`
 
 after installing, start either the system service or the user service and navigate to http://127.0.0.1:3923 for further instructions (unless you already edited the config files, in which case you are good to go, probably)
 

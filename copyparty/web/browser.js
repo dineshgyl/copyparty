@@ -583,6 +583,7 @@ if (1)
 		"u_ancient": 'your browser is impressively ancient -- maybe you should <a href="#" id="u2nah">use bup instead</a>',
 		"u_nowork": "need firefox 53+ or chrome 57+ or iOS 11+",
 		"tail_2old": "need firefox 105+ or chrome 71+ or iOS 14.5+",
+		"b2old": 'your browser is too old',
 		"u_nodrop": 'your browser is too old for drag-and-drop uploading',
 		"u_notdir": "that's not a folder!\n\nyour browser is too old,\nplease try dragdrop instead",
 		"u_uri": "to dragdrop images from other browser windows,\nplease drop it onto the big upload button",
@@ -666,6 +667,7 @@ if (1)
 		"rc_pla": "play as audio",
 		"rc_txt": "open in textfile viewer",
 		"rc_md": "open in markdown viewer",
+		"rc_wopi": "open in office editor",
 		"rc_dl": "download",
 		"rc_zip": "download as archive",
 		"rc_cpl": "copy link",
@@ -1113,6 +1115,7 @@ ebi('rcm').innerHTML = (
 	'<a href="#" id="rpla">' + L.rc_pla + '</a>' +
 	'<a href="#" id="rtxt">' + L.rc_txt + '</a>' +
 	'<a href="#" id="rmd">' + L.rc_md + '</a>' +
+	'<a href="#" id="rwopi">' + L.rc_wopi + '</a>' +
 	'<div id="rs1" class="sep"></div>' +
 	'<a href="#" id="rcpl">' + L.rc_cpl + '</a>' +
 	'<a href="#" id="rdl">' + L.rc_dl + '</a>' +
@@ -1253,8 +1256,8 @@ check_image_support('jxl', "data:image/jxl;base64,/woIAAAMABKIAgC4AF3lEgA=");
 
 
 var img_re = APPLE ?
-	/\.(a?png|avif|bmp|gif|hei[cf]s?|jpe?g|jfif|svg|webp|webm|mkv|mp4|m4v|mov|svg)(\?|$)/i :
-	/\.(a?png|avif|bmp|gif|jpe?g|jfif|svg|webp|webm|mkv|mp4|m4v|mov|svg)(\?|$)/i;
+	/\.(a?png|avif|bmp|gif|hei[cf]s?|jpe?g|jfif|jxl|svg|webp|webm|mkv|mp4|m4v|mov)(\?|$)/i :
+	/\.(a?png|avif|bmp|gif|jpe?g|jfif|jxl|svg|webp|webm|mkv|mp4|m4v|mov)(\?|$)/i;
 
 var wopi_set = !window.have_wopi ? null :
 	new Set('odt fodt ott doc docx dotx rtf odm ods fods ots xls xlsx odp fodp otp ppt pptx ppsx odg fodg otg odf'.split(' '));
@@ -5490,7 +5493,7 @@ var showfile = (function () {
 	r.tgltail = function () {
 		if (!window.TextDecoderStream) {
 			bcfg_set('taildoc', r.taildoc = false);
-			return toast.err(10, L.tail_2old);
+			return toast.err(10, L.b2old + ';\n' + L.tail_2old);
 		}
 		r.show(r.url, true);
 	};
@@ -6446,8 +6449,10 @@ var ahotkeys = function (e) {
 	if (k == 'F2')
 		return fileman.rename();
 
-	if (k == 'F4')
+	if (k == 'F4') {
+		enspin('t', 1);
 		return treectl.goto();
+	}
 
 	if (!treectl.hidden && (!sh || !thegrid.en)) {
 		if (kl == 'a')
@@ -8002,12 +8007,12 @@ var treectl = (function () {
 })();
 
 
-function enspin(i) {
+function enspin(i, ns) {
 	i = 'dlt_' + i;
 	if (ebi(i))
 		return;
 	var d = mknod('div', i, SPINNER);
-	d.className = 'dumb_loader_thing';
+	d.className = 'dumb_loader_thing' + ( ns? ' ns' : '');
 	if (SPINNER_CSS)
 		d.style.cssText = SPINNER_CSS;
 	document.body.appendChild(d);
@@ -9191,7 +9196,7 @@ function show_md(md, name, div, url, depth) {
 		if (depth) {
 			clmod(div, 'raw', 1);
 			div.textContent = "--[ " + name + " ]---------\r\n" + md;
-			return toast.warn(10, errmsg + (WebAssembly ? 'failed to load marked.js' : 'your browser is too old'));
+			return toast.warn(10, errmsg + (WebAssembly ? 'failed to load marked.js' : L.b2old));
 		}
 
 		wfp_debounce.n--;
@@ -9840,6 +9845,7 @@ var rcm = (function () {
 				case 'pla': play('f-' + selFile.id); break;
 				case 'txt': showfile.show(selFile.name); break;
 				case 'md': location = selFile.path + (has(selFile.path, '?') ? '&v' : '?v'); break;
+				case 'wopi': window.open('?wopi=' + selFile.name, '_blank').focus(); break;
 				case 'cpl': cliptxt(selFile.url, function() {toast.ok(2, L.clipped)}); break;
 				case 'dl': ebi('seldl').click(); break;
 				case 'zip': ebi('selzip').click(); break;
@@ -9900,13 +9906,20 @@ var rcm = (function () {
 
 		var has_sel = msel.getsel().length;
 		var has_clip = fileman.clip.length;
+		var ext = (function() {
+			if (!selFile.name) return null;
+			var di = selFile.name.lastIndexOf('.');
+			if (di < 1) return null;
+			return selFile.name.slice(di + 1).toLowerCase();
+		})();
 
 		clmod(ebi('ropn'), 'hide', !selFile.path);
 		clmod(ebi('rply'), 'hide', selFile.type != 'gf' && selFile.type != 'af');
 		clmod(ebi('rpla'), 'hide', selFile.type != 'gf');
 		clmod(ebi('rtxt'), 'hide', !selFile.id);
 		clmod(ebi('rs1'), 'hide', !selFile.path);
-		clmod(ebi('rmd'), 'hide', !selFile.name || selFile.name.slice(-3) != ".md");
+		clmod(ebi('rmd'), 'hide', !selFile.name || ext != "md");
+		clmod(ebi('rwopi'), 'hide', !selFile.name || !wopi_set || !wopi_set.has(ext));
 		clmod(ebi('rcpl'), 'hide', !selFile.path);
 		clmod(ebi('rdl'), 'hide', !has_sel);
 		clmod(ebi('rzip'), 'hide', !has_sel);

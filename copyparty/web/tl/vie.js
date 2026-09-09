@@ -585,6 +585,7 @@ Ls.vie = {
 	"u_ancient": "trình duyệt của bạn quá cũ; bạn có thể <a href=\"#\" id=\"u2nah\">dùng bup</a> thay thế",
 	"u_nowork": "cần Firefox 53+, Chrome 57+ hoặc iOS 11+",
 	"tail_2old": "cần Firefox 105+, Chrome 71+ hoặc iOS 14.5+",
+	"b2old": 'trình duyệt của bạn quá cũ', //m
 	"u_nodrop": "trình duyệt của bạn quá cũ để dùng kéo thả khi tải lên",
 	"u_notdir": "đây không phải thư mục\n\ntrình duyệt của bạn quá cũ,\nvui lòng thử dùng dragdrop",
 
@@ -690,6 +691,7 @@ Ls.vie = {
 	"rc_pla": "phát dưới dạng âm thanh", //m
 	"rc_txt": "mở trong trình xem tệp", //m
 	"rc_md": "mở trong trình soạn thảo văn bản", //m
+	"rc_wopi": "mở trong trình soạn thảo office", //m
 	"rc_dl": "tải xuống", //m
 	"rc_zip": "tải xuống dưới dạng gói nén", //m
 	"rc_cpl": "sao chép liên kết", //m

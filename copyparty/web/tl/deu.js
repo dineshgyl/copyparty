@@ -576,6 +576,7 @@ Ls.deu = {
 	"u_ancient": 'Dein Browser ist verdammt antik -- vielleicht solltest du <a href="#" id="u2nah">stattdessen bup benutzen</a>',
 	"u_nowork": "Benötigt Firefox 53+ oder Chrome 57+ oder iOS 11+",
 	"tail_2old": "Benötigt Firefox 105+ oder Chrome 71+ oder iOS 14.5+",
+	"b2old": 'Dein Browser ist zu alt', //m
 	"u_nodrop": 'Dein Browser ist zu alt für Drag-and-Drop Uploads',
 	"u_notdir": "Das ist kein Ordner!\n\nDein Browser ist zu alt,\nversuch stattdessen dragdrop",
 	"u_uri": "Um Bilder per Drag-and-Drop aus anderen Browserfenstern hochzuladen,\nlass' sie bitte über dem grossen Upload-Button fallen",
@@ -659,6 +660,7 @@ Ls.deu = {
 	"rc_pla": "als Audio abspielen",
 	"rc_txt": "als Text öffnen",
 	"rc_md": "im Texteditor öffnen",
+	"rc_wopi": "im office-editor öffnen", //m
 	"rc_dl": "herunterladen",
 	"rc_zip": "als Archiv herunterladen",
 	"rc_cpl": "Link kopieren", //m

@@ -575,6 +575,7 @@ Ls.spa = {
 	"u_ancient": "tu navegador es impresionantemente antiguo -- quizás deberías <a href=\"#\" id=\"u2nah\">usar bup en su lugar</a>",
 	"u_nowork": "se necesita firefox 53+ o chrome 57+ o iOS 11+",
 	"tail_2old": "se necesita firefox 105+ o chrome 71+ o iOS 14.5+",
+	"b2old": 'tu navegador es demasiado antiguo', //m
 	"u_nodrop": "tu navegador es demasiado antiguo para subir arrastrando y soltando",
 	"u_notdir": "¡eso no es una carpeta!\n\ntu navegador es demasiado antiguo,\npor favor intenta arrastrar y soltar en su lugar",
 	"u_uri": "para arrastrar y soltar imágenes desde otras ventanas del navegador,\npor favor suéltalas sobre el gran botón de subida",
@@ -658,6 +659,7 @@ Ls.spa = {
 	"rc_pla": "reproducir como audio", //m
 	"rc_txt": "abrir en el visor de archivos", //m
 	"rc_md": "abrir en el editor de texto", //m
+	"rc_wopi": "abrir en el editor de office", //m
 	"rc_dl": "descargar", //m
 	"rc_zip": "descargar como archivo", //m
 	"rc_cpl": "copiar enlace", //m

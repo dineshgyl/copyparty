@@ -577,6 +577,7 @@ Ls.hun = {
 	"u_ancient": 'lenyűgözően őskori a böngésződ -- talán <a href="#" id="u2nah">használd inkább az egyszerű uploader-t</a>',
 	"u_nowork": 'legalább Firefox 53, Chrome 57 vagy iOS 11 kell',
 	"tail_2old": 'legalább Firefox 105, Chrome 71 vagy iOS 14.5 kell',
+	"b2old": 'a böngésződ túl öreg', //m
 	"u_nodrop": 'a böngésződ túl öreg a drag-and-drop-hoz',
 	"u_notdir": 'ez nem egy mappa!\n\na böngésződ túl öreg,\npróbáld meg inkább behúzni',
 	"u_uri": 'képek behúzásához más ablakból,\ndobd rá a nagy feltöltés gombra',
@@ -660,6 +661,7 @@ Ls.hun = {
 	"rc_pla": 'lejátszás audióként',
 	"rc_txt": 'megnyitás szövegként',
 	"rc_md": 'megnyitás markdownként',
+	"rc_wopi": "megnyitás office szerkesztőben", //m
 	"rc_dl": 'letöltés',
 	"rc_zip": 'letöltés archívumként',
 	"rc_cpl": 'link másolása',

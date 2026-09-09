@@ -576,6 +576,7 @@ Ls.fra = {
 	"u_ancient": 'votre navigateur est impressionnamment ancien -- vous devriez peut-être <a href="#" id="u2nah">utiliser bup à la place</a>',
 	"u_nowork": "nécessite firefox 53+ ou chrome 57+ ou iOS 11+",
 	"tail_2old": "nécessite firefox 105+ ou chrome 71+ ou iOS 14.5+",
+	"b2old": 'votre navigateur est trop ancien', //m
 	"u_nodrop": 'votre navigateur est trop ancien pour le téléversement par glisser-déposer',
 	"u_notdir": "ce n'est pas un dossier!\n\nvotre navigateur est trop ancien,\nveuillez essayer le glisser-déposer à la place",
 	"u_uri": "pour glisser-déposer des images depuis d'autres fenêtres de navigateur,\nveuillez les déposer sur le gros bouton de téléversement",
@@ -659,6 +660,7 @@ Ls.fra = {
 	"rc_pla": "Lire comme audio", //m
 	"rc_txt": "ouvrir dans le visionneur de fichiers", //m
 	"rc_md": "ouvrir dans l’éditeur de texte", //m
+	"rc_wopi": "ouvrir dans l’éditeur office", //m
 	"rc_dl": "télécharger", //m
 	"rc_zip": "télécharger comme archive", //m
 	"rc_cpl": "copier le lien", //m

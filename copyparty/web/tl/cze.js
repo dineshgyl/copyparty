@@ -580,6 +580,7 @@ Ls.cze = {
 	"u_ancient": "váš prohlížeč je úctyhodně starý -- možná byste měli <a href=\"#\" id=\"u2nah\">použít bup</a>",
 	"u_nowork": "vyžadován firefox 53+ nebo chrome 57+ nebo iOS 11+",
 	"tail_2old": "vyžadován firefox 105+ nebo chrome 71+ nebo iOS 14.5+",
+	"b2old": "váš prohlížeč je příliš starý", //m
 	"u_nodrop": "váš prohlížeč je příliš starý pro nahrávání přetažením (drag-and-drop)",
 	"u_notdir": "toto není složka!\n\nváš prohlížeč je příliš starý,\nzkuste prosím soubory přetáhnout",
 	"u_uri": "pro přetažení obrázků z jiných oken prohlížeče,\nje prosím přetáhněte na velké tlačítko pro nahrávání",
@@ -663,6 +664,7 @@ Ls.cze = {
 	"rc_pla": "přehrát jako zvuk", //m
 	"rc_txt": "otevřít v prohlížeči souborů", //m
 	"rc_md": "otevřít v textovém editoru", //m
+	"rc_wopi": "otevřít v office editoru", //m
 	"rc_dl": "stáhnout", //m
 	"rc_zip": "stáhnout jako archiv", //m
 	"rc_cpl": "kopírovat odkaz", //m

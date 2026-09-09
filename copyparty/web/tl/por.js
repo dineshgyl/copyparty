@@ -576,6 +576,7 @@ Ls.por = {
 	"u_ancient": 'seu navegador é impressionantemente antigo -- talvez você devesse <a href="#" id="u2nah">usar o bup em vez disso</a>',
 	"u_nowork": "precisa do firefox 53+ ou chrome 57+ ou iOS 11+",
 	"tail_2old": "precisa do firefox 105+ ou chrome 71+ ou iOS 14.5+",
+	"b2old": 'seu navegador é muito antigo', //m
 	"u_nodrop": 'seu navegador é muito antigo para upload de arrastar e soltar',
 	"u_notdir": "isso não é uma pasta!\n\nseu navegador é muito antigo,\npor favor, tente arrastar e soltar em vez disso",
 	"u_uri": "para arrastar e soltar imagens de outras janelas do navegador,\npor favor, solte-as no grande botão de upload",
@@ -659,6 +660,7 @@ Ls.por = {
 	"rc_pla": "reproduzir como áudio",
 	"rc_txt": "abrir no leitor de texto",
 	"rc_md": "abrir no leitor markdown",
+	"rc_wopi": "abrir no editor office", //m
 	"rc_dl": "baixar",
 	"rc_zip": "baixar compactado",
 	"rc_cpl": "copiar link",

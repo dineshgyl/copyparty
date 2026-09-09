@@ -576,6 +576,7 @@ Ls.nld = {
 	"u_ancient": 'Je browser is indrukwekkend oud -- misschien moet je <a href="#" id="u2nah">in plaats daarvan bup gebruiken</a>',
 	"u_nowork": "Je moet firefox 53+ of chrome 57+ of iOS 11+ hebben",
 	"tail_2old": "Je moet firefox 105+ of chrome 71+ of iOS 14.5+ hebben",
+	"b2old": 'Je browser is te oud', //m
 	"u_nodrop": 'Je browser is te oud voor uploaden via slepen en neerzetten',
 	"u_notdir": "Dat is geen map!\n\nuw browser is te oud,\nprobeer in plaats daarvan sleep en neerzetten",
 	"u_uri": "Om afbeeldingen te slepen vanuit andere browser tabblad,\nplaats deze dan op de grote uploadknop",
@@ -659,6 +660,7 @@ Ls.nld = {
 	"rc_pla": "Afspelen als audio", //m
 	"rc_txt": "Openen in bestandsviewer", //m
 	"rc_md": "Openen in teksteditor", //m
+	"rc_wopi": "Openen in office-editor", //m
 	"rc_dl": "Downloaden", //m
 	"rc_zip": "Downloaden als archief", //m
 	"rc_cpl": "Link kopiëren", //m
