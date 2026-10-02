@@ -1699,6 +1699,7 @@ def add_sftp(ap):
     ap2.add_argument("--sftp-pw", action="store_true", help="allow password-authentication with sftp (not just ssh-keys)")
     ap2.add_argument("--sftp-anon", metavar="TXT", type=u, default="", help="allow anonymous/unauthenticated connections with \033[33mTXT\033[0m as username")
     ap2.add_argument("--sftp-hostk", metavar="FP", type=u, default=E.cfg, help="path to folder with hostkeys, for example 'ssh_host_rsa_key'; missing keys will be generated")
+    ap2.add_argument("--sftp-fastldr", action="store_true", help="speedhack for 'loading hostkeys' on old CPUs; only use with known-good hostkeys")
     ap2.add_argument("--sftp-banner", metavar="T", type=u, default="", help="bannertext to send when someone connects; can be @filepath")
     ap2.add_argument("--sftp-ipa", metavar="CIDR", type=u, default="", help="only accept connections from IP-addresses inside \033[33mCIDR\033[0m (comma-separated); specify [\033[32many\033[0m] to disable inheriting \033[33m--ipa\033[0m / \033[33m--ipar\033[0m. Examples: [\033[32mlan\033[0m] or [\033[32m10.89.0.0/16, 192.168.33.0/24\033[0m]")
     ap2.add_argument("--sftp-hs-t", metavar="SEC", type=int, default=15, help="connection handshake timeout in seconds")
@@ -1917,6 +1918,7 @@ def add_safety(ap):
     ap2.add_argument("--aclose", metavar="MIN", type=int, default=10, help="if a client maxes out the server connection limit, downgrade it from connection:keep-alive to connection:close for \033[33mMIN\033[0m minutes (and also kill its active connections) -- disable with 0")
     ap2.add_argument("--loris", metavar="B", type=int, default=60, help="if a client maxes out the server connection limit without sending headers, ban it for \033[33mB\033[0m minutes; disable with [\033[32m0\033[0m]")
     ap2.add_argument("--acao", metavar="V[,V]", type=u, default="*", help="Access-Control-Allow-Origin; list of origins (domains/IPs without port) to accept requests from; [\033[32mhttps://1.2.3.4\033[0m]. Default [\033[32m*\033[0m] allows requests from all sites but removes cookies and http-auth; only ?pw=hunter2 survives")
+    ap2.add_argument("--acao-re", metavar="PTN", type=u, default="", help="Access-Control-Allow-Origin; supplement to \033[33m--acao\033[0m; allow request if http-header 'Origin' matches either \033[33m--acao\033[0m or regex-\033[33mPTN\033[0m; ominous example: [\033[32m^moz-extension://.*\033[0m]")
     ap2.add_argument("--acam", metavar="V[,V]", type=u, default="GET,HEAD", help="Access-Control-Allow-Methods; list of methods to accept from offsite ('*' behaves like \033[33m--acao\033[0m's description)")
     if FULL_HELP or ANYWIN:
         ap2.add_argument("--unsafe-tools", action="store_true", help="windows-only: allow running programs (ffmpeg, dcraw_emu, ...) when their location is inside a folder that can be uploaded to (dangerous due to DLL-hijacking)")
