@@ -6641,35 +6641,16 @@ class HttpCli(object):
         self.reply(html.encode("utf-8"), status=200)
         return True
 
-    def tx_gallery(self):
-        "a"
+    def tx_gallery(self) -> bool:
+        """Render gallery view or return JSON data of media folders"""
         if self.uparam.get("gallery") == "json":
             return self.tx_gallery_json()
-
-        # Dynamically load and decompress util.js and gallery.js
-        def get_web_asset(name):
-            try:
-                import gzip
-                with load_resource(self.E, "web/" + name + ".js.gz", "rb") as f:
-                    return gzip.decompress(f.read()).decode("utf-8", "replace")
-            except Exception:
-                try:
-                    with load_resource(self.E, "web/" + name + ".js", "r") as f:
-                        return f.read()
-                except Exception:
-                    return ""
-
-        util_js = get_web_asset("util")
-        gallery_js = get_web_asset("gallery")
-
+        
+        # Render the gallery HTML page
         html = self.j2s(
             "gallery",
             title="Media Gallery",
             this=self,
-            dtheme=self.args.theme,
-            srv_info="",
-            inlined_util_js=util_js,
-            inlined_gallery_js=gallery_js,
         )
         self.reply(html.encode("utf-8"), status=200)
         return True

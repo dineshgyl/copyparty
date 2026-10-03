@@ -62,7 +62,7 @@
 
 	<a href="#" id="repl">π</a>
 
-	<script>
+	<script nonce="{{ js_nonce }}">
 		var SR = "{{ r }}",
 			lang = "{{ lang }}",
 			dfavico = "{{ favico }}",
@@ -71,11 +71,12 @@
 		var STG = window.localStorage;
 		document.documentElement.className = (STG && STG.cpp_thm) || "{{ dtheme }}";
 	</script>
-	<script>
-	{{ inlined_util_js }}
-        {{ inlined_gallery_js }}
-        </script>
-	<script>
+        <script nonce="{{ js_nonce }}" src="{{ r }}/.cpr/w/util.js?_={{ ts }}"></script>
+	{%- if lang != "eng" %}
+	<script nonce="{{ js_nonce }}" src="{{ r }}/.cpr/w/tl/{{ lang }}.js?_={{ ts }}"></script>
+	{%- endif %}
+	<script nonce="{{ js_nonce }}" src="{{ r }}/.cpr/w/gallery.js?_={{ ts }}"></script>
+	<script nonce="{{ js_nonce }}">
 		Date.now();function jsldp(a,b){2!=window[a]&&alert("FATAL ERROR: cannot load "+b+".js due to unreliable network or broken reverse-proxy; try CTRL-SHIFT-R")}
 		jsldp("J_UTL","util");
 		jsldp("J_GAL","gallery");
