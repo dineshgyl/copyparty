@@ -7,8 +7,8 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=0.8, minimum-scale=0.6">
 	<meta name="theme-color" content="#{{ tcolor }}">
-	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/ui.css?_={{ ts }}">
-	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/gallery.css?_={{ ts }}">
+	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/w/ui.css?_={{ ts }}">
+	<link rel="stylesheet" media="screen" href="{{ r }}/.cpr/w/gallery.css?_={{ ts }}">
 {{ html_head }}
 </head>
 
@@ -71,11 +71,11 @@
 		var STG = window.localStorage;
 		document.documentElement.className = (STG && STG.cpp_thm) || "{{ dtheme }}";
 	</script>
-	<script src="{{ r }}/.cpr/util.js?_={{ ts }}"></script>
+	<script src="{{ r }}/.cpr/w/util.js?_={{ ts }}"></script>
 	{%- if lang != "eng" %}
-	<script src="{{ r }}/.cpr/tl/{{ lang }}.js?_={{ ts }}"></script>
+	<script src="{{ r }}/.cpr/w/tl/{{ lang }}.js?_={{ ts }}"></script>
 	{%- endif %}
-	<script src="{{ r }}/.cpr/gallery.js?_={{ ts }}"></script>
+	<script src="{{ r }}/.cpr/w/gallery.js?_={{ ts }}"></script>
 	<script>
 		Date.now();function jsldp(a,b){2!=window[a]&&alert("FATAL ERROR: cannot load "+b+".js due to unreliable network or broken reverse-proxy; try CTRL-SHIFT-R")}
 		jsldp("J_UTL","util");

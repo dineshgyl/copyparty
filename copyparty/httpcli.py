@@ -6650,6 +6650,8 @@ class HttpCli(object):
             "gallery",
             title="Media Gallery",
             this=self,
+            dtheme=self.args.theme,
+            srv_info="",
         )
         self.reply(html.encode("utf-8"), status=200)
         return True
